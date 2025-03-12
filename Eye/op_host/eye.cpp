@@ -6,18 +6,38 @@
 namespace optiling {
 static ge::graphStatus TilingFunc(gert::TilingContext* context)
 {
+    EyeTilingData tiling;
 
-  EyeTilingData tiling;
-  const gert::StorageShape* x1_shape = context->GetInputShape(0);
-  int32_t data_sz = 1;
-  for (int i = 0; i < x1_shape->GetStorageShape().GetDimNum(); i++)
-    data_sz *= x1_shape->GetStorageShape().GetDim(i);
-  tiling.set_size(data_sz);
-  context->SetBlockDim(8);
-  tiling.SaveToBuffer(context->GetRawTilingData()->GetData(), context->GetRawTilingData()->GetCapacity());
-  context->GetRawTilingData()->SetDataSize(tiling.GetDataSize());
+    // For eye, we finish all work on one ai core.
+    uint32_t num_elements_total = context->GetInputTensor(0)->GetShapeSize();
 
-  return ge::GRAPH_SUCCESS;
+    const int64_t* p_num_rows = context->GetAttrs()->GetInt(0);
+    const int64_t* p_num_columns = context->GetAttrs()->GetInt(1);
+
+    int32_t num_rows = *p_num_rows;
+    int32_t num_columns = *p_num_columns;
+    if (num_columns == 0) {
+        num_columns = num_rows;
+    }
+
+    int32_t num_batches = 1;
+    int32_t num_elements_per_batch = num_rows * num_columns;
+    if (context->GetInputTensor(0)->GetOriginShape().GetDimNum() > 2) {
+        num_batches = num_elements_total / num_elements_per_batch;
+    }
+
+    tiling.set_num_rows(num_rows);
+    tiling.set_num_columns(num_columns);
+    tiling.set_num_batches(num_batches);
+    tiling.set_num_elements_per_batch(num_elements_per_batch);
+
+    tiling.SaveToBuffer(context->GetRawTilingData()->GetData(),
+                        context->GetRawTilingData()->GetCapacity());
+    context->GetRawTilingData()->SetDataSize(tiling.GetDataSize());
+    size_t* currentWorkspace = context->GetWorkspaceSizes(1);
+    currentWorkspace[0] = 0;
+
+    return ge::GRAPH_SUCCESS;
 }
 }
 
@@ -57,8 +77,7 @@ public:
 
         this->AICore()
             .SetTiling(optiling::TilingFunc);
-        this->AICore().AddConfig("ascend910b");
-
+        this->AICore().AddConfig("ascend910");
     }
 };
 
