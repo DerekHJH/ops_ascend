@@ -7,7 +7,7 @@ import numpy as np
 import sys  
 import threading
 from typing import Optional, Tuple
-case_data = {
+test_data = {
      'case1': {
         'shape': [32, 32, 32, 32],
         'data_type': np.float16,
@@ -56,39 +56,34 @@ def verify_result(real_result, golden):
 class TestCustomOP(TestCase):
     def test_custom_op_case(self,num):
         
-        caseNmae='case'+num
-        tensor_self = np.zeros( case_data[caseNmae]['shape']).astype(case_data[caseNmae]['data_type'])
+        test_name = "case" + num
+        tensor_self = np.zeros(test_data[test_name]['shape']).astype(test_data[test_name]['data_type'])
+        numRows=np.array(test_data[test_name]['numRows']).astype(np.int32)
+        dtype=np.array(test_data[test_name]['dtype']).astype(np.int32)
+        numColumns=np.array(test_data[test_name]['numColumns']).astype(np.int32)
+        batchShape=np.array(test_data[test_name]['batchShape']).astype(np.int32)
         
-        
-        numRows=np.array(case_data[caseNmae]['numRows']).astype(np.int64)
-        dtype=np.array(case_data[caseNmae]['dtype']).astype(np.int64)
-        numColumns=np.array(case_data[caseNmae]['numColumns']).astype(np.int64)
-        batchShape=np.array(case_data[caseNmae]['batchShape']).astype(np.int64)
-        
-        res = torch.eye(n=case_data[caseNmae]['numRows'],m=case_data[caseNmae]['numColumns'])
-        res = torch.broadcast_to(res, case_data[caseNmae]['shape'])
-        golden=res.numpy().astype(case_data[caseNmae]['data_type'])
+        res = torch.eye(n=test_data[test_name]['numRows'],m=test_data[test_name]['numColumns'])
+        res = torch.broadcast_to(res, test_data[test_name]['shape'])
+        golden=res.numpy().astype(test_data[test_name]['data_type'])
 
         tensor_self_npu = torch.from_numpy(tensor_self).npu()
         numColumns_npu = torch.from_numpy(numColumns).npu()
         numRows_npu = torch.from_numpy(numRows).npu()
         batchShape_npu=torch.from_numpy(batchShape).npu()
         batchShape_npu = tuple(batchShape_npu.tolist())
-        
         dtype_npu=torch.from_numpy(dtype).npu()
         
-        # 修改输入
-        
-        output = run_with_timeout(custom_ops_lib.custom_op, args=(tensor_self_npu,  numRows_npu,numColumns_npu,batchShape_npu,dtype_npu), timeout=30)
+        output = run_with_timeout(custom_ops_lib.custom_op, args=(tensor_self_npu, numRows_npu, numColumns_npu, batchShape_npu, dtype_npu), timeout=30)
         if output is None:
-            print(f"{caseNmae} execution timed out!")
+            print(f"{test_name} execution timed out!")
         else:
             print(type(output))
             output = output.cpu().numpy()
             if verify_result(output, golden):
-                print(f"{caseNmae} verify result pass!")
+                print(f"{test_name} verify result pass!")
             else:
-                print(f"{caseNmae} verify result failed!")
+                print(f"{test_name} verify result failed!")
 
 if __name__ == "__main__":
     TestCustomOP().test_custom_op_case(sys.argv[1])
