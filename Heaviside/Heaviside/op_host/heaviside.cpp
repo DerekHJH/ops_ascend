@@ -29,6 +29,9 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     ascendcPlatform.GetCoreMemSize(platform_ascendc::CoreMemType::UB, ub_size);
     uint64_t block_size = 32;
     uint64_t ub_size_aligned = ub_size / block_size * block_size;
+    if (ub_size_aligned / block_size % 2 != 0) {
+        ub_size_aligned -= block_size;
+    } // Make sure the the number of blocks in UB is even, for double buffering
     uint64_t ub_block_num = ub_size / block_size;
     uint64_t num_elements_per_block = block_size / size_of_dtype;
     /*
