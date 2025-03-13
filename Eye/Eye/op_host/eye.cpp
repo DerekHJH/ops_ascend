@@ -2,13 +2,14 @@
 #include "eye_tiling.h"
 #include "register/op_def_registry.h"
 
-
+#define BLOCK_DIM 1
 namespace optiling {
 static ge::graphStatus TilingFunc(gert::TilingContext* context)
 {
-    EyeTilingData tiling;
-
     // For eye, we finish all work on one ai core.
+    context->SetBlockDim(BLOCK_DIM);
+
+    EyeTilingData tiling;
     uint32_t num_elements_total = context->GetInputTensor(0)->GetShapeSize();
 
     const int64_t* p_num_rows = context->GetAttrs()->GetInt(0);
@@ -77,7 +78,7 @@ public:
 
         this->AICore()
             .SetTiling(optiling::TilingFunc);
-        this->AICore().AddConfig("ascend910");
+        this->AICore().AddConfig("ascend910b");
     }
 };
 
