@@ -2,6 +2,7 @@
 #include "heaviside_tiling.h"
 #include "register/op_def_registry.h"
 #include "tiling/platform/platform_ascendc.h"
+#include <numeric>
 
 namespace optiling {
 static ge::graphStatus TilingFunc(gert::TilingContext* context)
@@ -34,34 +35,21 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     */
 
     uint64_t num_elements_total = context->GetInputTensor(0)->GetShapeSize();
-    uint64_t num_elements_total_aligned = ((num_elements_total + num_elements_per_block - 1) / num_elements_per_block) * num_elements_per_block;
+    uint64_t align_ = num_elements_per_block * num_cores;
+    uint64_t num_elements_total_aligned = ((num_elements_total + align_ - 1) / align_) * align_;
 
-    uint64_t num_elements_per_core = num_elements_total_aligned / num_cores; // Assume evenly distributed for now
+    uint64_t num_elements_per_core = num_elements_total_aligned / num_cores; // Evenly distributed thanks to align_
     tiling.set_num_elements_per_core(num_elements_per_core);
 
+    // All tiles are properly aligned thanks to align_
+    uint64_t num_tiles = (num_elements_per_core + ub_size_aligned - 1) / ub_size_aligned;
+    uint64_t num_elements_per_tile = ub_size_aligned;
+    uint64_t num_elements_last_tile = num_elements_per_core % ub_size_aligned;
+    tiling.set_num_tiles(num_tiles);
+    tiling.set_num_elements_per_tile(num_elements_per_tile);
+    tiling.set_num_elements_last_tile(num_elements_last_tile);
 
-    uint64_t num_tiles = num_elements_per_core / ub_size_aligned;
 
-
-    uint64_t num_elements_per_tile = 0;
-    uint64_t num_elements_last_tile = 0;
-    if (num_tiles == 0) {
-        num_tiles = 1;
-        // 使用double buffer, 保证为偶数
-        num_elements_per_tile = ((num_elements_per_core / num_elements_per_block) + 1) / 2 * 2 * num_elements_per_block;
-        num_elements_last_tile = num_elements_per_tile;
-    } else if((num_elements_per_core / num_elements_per_block) % ub_block_num == 0) {
-        num_elements_per_tile = ub_block_num * num_elements_per_block;
-        num_elements_last_tile = num_elements_per_tile;
-    } else {
-        // 核内不能均分
-        num_tiles = num_tiles + 1;    // 加一个小包的数量
-        num_elements_per_tile = ub_block_num * num_elements_per_block;
-        num_elements_last_tile = num_elements_per_core - (num_tiles - 1) * num_elements_per_tile;
-        num_elements_last_tile = ((num_elements_last_tile / num_elements_per_block) + 1) / 2 * 2 * num_elements_per_block;
-    }
-
-    tiling.set_num_elements_per_block(num_elements_per_block);
     tiling.SaveToBuffer(context->GetRawTilingData()->GetData(),
                         context->GetRawTilingData()->GetCapacity());
     context->GetRawTilingData()->SetDataSize(tiling.GetDataSize());
