@@ -14,6 +14,7 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     */
     auto ascendcPlatform = platform_ascendc::PlatformAscendC(context->GetPlatformInfo());
     auto dtype = context->GetInputTensor(0)->GetDataType();
+    uint64_t size_of_dtype;
     switch (dtype) {
         case ge::DT_FLOAT16: size_of_dtype = 2; break;
         case ge::DT_FLOAT:   size_of_dtype = 4; break;
