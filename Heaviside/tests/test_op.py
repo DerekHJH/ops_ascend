@@ -7,7 +7,7 @@ import numpy as np
 import sys  
 import threading
 from typing import Optional, Tuple
-case_data = {
+test_data = {
     'case1': {
         'input_shape': [32],
         'data_type': np.float32,
@@ -53,10 +53,9 @@ def verify_result(real_result, golden):
 
 class TestCustomOP(TestCase):
     def test_custom_op_case(self,num):
-        print(num)
-        caseNmae='case'+num
-        tensor_input = np.random.uniform(1, 100,case_data[caseNmae]['input_shape']).astype(case_data[caseNmae]['data_type'])
-        tensor_values = np.random.uniform(1, 100,case_data[caseNmae]['values_shape']).astype(case_data[caseNmae]['data_type'])
+        test_name="case" + num
+        tensor_input = np.random.uniform(1, 100,test_data[test_name]['input_shape']).astype(test_data[test_name]['data_type'])
+        tensor_values = np.random.uniform(1, 100,test_data[test_name]['values_shape']).astype(test_data[test_name]['data_type'])
 
         golden = torch.heaviside(torch.from_numpy(tensor_input), torch.from_numpy(tensor_values)).numpy()
         
@@ -70,13 +69,13 @@ class TestCustomOP(TestCase):
 
         output = run_with_timeout(custom_ops_lib.custom_op, args=(tensor_input_npu, tensor_values_npu), timeout=30)
         if output is None:
-            print(f" {caseNmae} execution timed out!")
+            print(f" {test_name} execution timed out!")
         else:
             output = output.cpu().numpy()
             if verify_result(output, golden):
-                print(f"{caseNmae} verify result pass!")
+                print(f"{test_name} verify result pass!")
             else:
-                print(f"{caseNmae} verify result failed!")
+                print(f"{test_name} verify result failed!")
 
 if __name__ == "__main__":
     print(sys.argv)

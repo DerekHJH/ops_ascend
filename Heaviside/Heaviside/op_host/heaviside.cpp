@@ -1,23 +1,73 @@
 
 #include "heaviside_tiling.h"
 #include "register/op_def_registry.h"
-
+#include "tiling/platform/platform_ascendc.h"
 
 namespace optiling {
 static ge::graphStatus TilingFunc(gert::TilingContext* context)
 {
 
-  HeavisideTilingData tiling;
-  const gert::StorageShape* x1_shape = context->GetInputShape(0);
-  int32_t data_sz = 1;
-  for (int i = 0; i < x1_shape->GetStorageShape().GetDimNum(); i++)
-    data_sz *= x1_shape->GetStorageShape().GetDim(i);
-  tiling.set_size(data_sz);
-  context->SetBlockDim(8);
-  tiling.SaveToBuffer(context->GetRawTilingData()->GetData(), context->GetRawTilingData()->GetCapacity());
-  context->GetRawTilingData()->SetDataSize(tiling.GetDataSize());
+    HeavisideTilingData tiling;
+    /*
+        Start preparing information for tiling
+    */
+    auto ascendcPlatform = platform_ascendc::PlatformAscendC(context->GetPlatformInfo());
+    auto dtype = context->GetInputTensor(0)->GetDataType();
+    switch (dtype) {
+        case ge::DT_FLOAT16: size_of_dtype = 2; break;
+        case ge::DT_FLOAT:   size_of_dtype = 4; break;
+        default: size_of_dtype = 4; // Default to float
+    }
 
-  return ge::GRAPH_SUCCESS;
+    auto num_cores = ascendcPlatform.GetCoreNumAiv();
+    context->SetBlockDim(num_cores);
+
+    // Set the largest memory unit: UB and the smallest memory unit: block
+    uint64_t ub_size;
+    ascendcPlatform.GetCoreMemSize(platform_ascendc::CoreMemType::UB, ub_size);
+    uint64_t block_size = 32;
+    uint64_t ub_size_aligned = ub_size / block_size * block_size;
+    uint64_t ub_block_num = ub_size / block_size;
+    uint64_t num_elements_per_block = block_size / size_of_dtype;
+    /*
+        End preparing information for tiling
+    */
+
+    uint64_t num_elements_total = context->GetInputTensor(0)->GetShapeSize();
+    uint64_t num_elements_total_aligned = ((num_elements_total + num_elements_per_block - 1) / num_elements_per_block) * num_elements_per_block;
+
+    uint64_t num_elements_per_core = num_elements_total_aligned / num_cores; // Assume evenly distributed for now
+    tiling.set_num_elements_per_core(num_elements_per_core);
+
+
+    uint64_t num_tiles = num_elements_per_core / ub_size_aligned;
+
+
+    uint64_t num_elements_per_tile = 0;
+    uint64_t num_elements_last_tile = 0;
+    if (num_tiles == 0) {
+        num_tiles = 1;
+        // 使用double buffer, 保证为偶数
+        num_elements_per_tile = ((num_elements_per_core / num_elements_per_block) + 1) / 2 * 2 * num_elements_per_block;
+        num_elements_last_tile = num_elements_per_tile;
+    } else if((num_elements_per_core / num_elements_per_block) % ub_block_num == 0) {
+        num_elements_per_tile = ub_block_num * num_elements_per_block;
+        num_elements_last_tile = num_elements_per_tile;
+    } else {
+        // 核内不能均分
+        num_tiles = num_tiles + 1;    // 加一个小包的数量
+        num_elements_per_tile = ub_block_num * num_elements_per_block;
+        num_elements_last_tile = num_elements_per_core - (num_tiles - 1) * num_elements_per_tile;
+        num_elements_last_tile = ((num_elements_last_tile / num_elements_per_block) + 1) / 2 * 2 * num_elements_per_block;
+    }
+
+    tiling.set_num_elements_per_block(num_elements_per_block);
+    tiling.SaveToBuffer(context->GetRawTilingData()->GetData(),
+                        context->GetRawTilingData()->GetCapacity());
+    context->GetRawTilingData()->SetDataSize(tiling.GetDataSize());
+    size_t* currentWorkspace = context->GetWorkspaceSizes(1);
+    currentWorkspace[0] = 0;
+    return ge::GRAPH_SUCCESS;
 }
 }
 
