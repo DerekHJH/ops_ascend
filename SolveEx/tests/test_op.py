@@ -4,7 +4,6 @@ from torch_npu.testing.testcase import TestCase, run_tests
 import custom_ops_lib
 torch.npu.config.allow_internal_format = False
 import numpy as np
-import tensorflow as tf
 import sys  
 import threading
 from typing import Optional, Tuple
