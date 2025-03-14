@@ -5,9 +5,9 @@
 #include <numeric>
 
 namespace optiling {
+constexpr int32_t BUFFER_NUM = 2;
 static ge::graphStatus TilingFunc(gert::TilingContext* context)
 {
-
     HeavisideTilingData tiling;
     /*
         Start preparing information for tiling
@@ -15,6 +15,7 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     auto ascendcPlatform = platform_ascendc::PlatformAscendC(context->GetPlatformInfo());
     auto dtype = context->GetInputTensor(0)->GetDataType();
     uint64_t size_of_dtype;
+    // TODO: Directly get the size of dtype using ascend functions
     switch (dtype) {
         case ge::DT_FLOAT16: size_of_dtype = 2; break;
         case ge::DT_FLOAT:   size_of_dtype = 4; break;
@@ -27,19 +28,17 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     // Set the largest memory unit: UB and the smallest memory unit: block
     uint64_t ub_size;
     ascendcPlatform.GetCoreMemSize(platform_ascendc::CoreMemType::UB, ub_size);
-    uint64_t block_size = 32;
+    uint64_t block_size = 32; // TODO: Is it always 32 across different chips?
     uint64_t ub_size_aligned = ub_size / block_size * block_size;
-    if (ub_size_aligned / block_size % 2 != 0) {
-        ub_size_aligned -= block_size;
-    } // Make sure the the number of blocks in UB is even, for double buffering
-    uint64_t ub_block_num = ub_size / block_size;
+    uint64_t ub_block_num = ub_size_aligned / block_size;
     uint64_t num_elements_per_block = block_size / size_of_dtype;
     /*
         End preparing information for tiling
     */
 
     uint64_t num_elements_total = context->GetInputTensor(0)->GetShapeSize();
-    uint64_t align_ = num_elements_per_block * num_cores;
+    tiling.set_num_elements_total(num_elements_total);
+    uint64_t align_ = num_elements_per_block * num_cores * BUFFER_NUM;
     uint64_t num_elements_total_aligned = ((num_elements_total + align_ - 1) / align_) * align_;
 
     uint64_t num_elements_per_core = num_elements_total_aligned / num_cores; // Evenly distributed thanks to align_
@@ -47,11 +46,14 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
 
     // All tiles are properly aligned thanks to align_
     uint64_t num_tiles = (num_elements_per_core + ub_size_aligned - 1) / ub_size_aligned;
-    uint64_t num_elements_per_tile = ub_size_aligned;
-    uint64_t num_elements_last_tile = num_elements_per_core % ub_size_aligned;
+    // Evenly distribute elements across tiles at the granularity of block_size * BUFFER_NUM
+    uint64_t temp = num_elements_per_core / block_size / BUFFER_NUM; // Divisible thanks to align_
+    temp = (temp + num_tiles - 1) / num_tiles * num_tiles;
+    uint64_t num_elements_per_tile = temp * block_size * BUFFER_NUM;
+    uint64_t num_elements_per_buffer = temp * block_size;
     tiling.set_num_tiles(num_tiles);
     tiling.set_num_elements_per_tile(num_elements_per_tile);
-    tiling.set_num_elements_last_tile(num_elements_last_tile);
+    tiling.set_num_elements_per_tile(num_elements_per_buffer);
 
 
     tiling.SaveToBuffer(context->GetRawTilingData()->GetData(),

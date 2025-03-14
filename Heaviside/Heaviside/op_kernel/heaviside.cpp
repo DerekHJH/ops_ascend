@@ -1,5 +1,4 @@
 #include "kernel_operator.h"
-constexpr int32_t BUFFER_NUM = 2; // tensor num for each queue
 
 class Heaviside {
 public:
@@ -63,6 +62,7 @@ private:
     AscendC::GlobalTensor<DTYPE_X> xGm;
     AscendC::GlobalTensor<DTYPE_Y> yGm;
     AscendC::GlobalTensor<DTYPE_Z> zGm;
+    num_elements_per_core
 };
 
 
