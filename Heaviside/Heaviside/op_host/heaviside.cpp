@@ -5,56 +5,30 @@
 #include <numeric>
 
 namespace optiling {
-constexpr int32_t BUFFER_NUM = 2;
+constexpr uint32_t BUFFER_NUM = 2;
+constexpr uint32_t VECTOR_NUM = 4; // x, y, z, buf;
+constexpr uint32_t BLOCK_SIZE = 32;
 static ge::graphStatus TilingFunc(gert::TilingContext* context)
 {
     HeavisideTilingData tiling;
-    /*
-        Start preparing information for tiling
-    */
-    auto ascendcPlatform = platform_ascendc::PlatformAscendC(context->GetPlatformInfo());
-    auto dtype = context->GetInputTensor(0)->GetDataType();
-    uint64_t size_of_dtype;
-    // TODO: Directly get the size of dtype using ascend functions
-    switch (dtype) {
-        case ge::DT_FLOAT16: size_of_dtype = 2; break;
-        case ge::DT_FLOAT:   size_of_dtype = 4; break;
-        default: size_of_dtype = 4; // Default to float
-    }
 
+    auto ascendcPlatform = platform_ascendc::PlatformAscendC(context->GetPlatformInfo());
+    uint32_t size_of_dtype;
+    ge:TypeUtils::GetDataTypeLength(context->GetInputDesc(0)->GetDataType(), size_of_dtype);
     auto num_cores = ascendcPlatform.GetCoreNumAiv();
     context->SetBlockDim(num_cores);
-
-    // Set the largest memory unit: UB and the smallest memory unit: block
-    uint64_t ub_size;
+    uint32_t ub_size;
     ascendcPlatform.GetCoreMemSize(platform_ascendc::CoreMemType::UB, ub_size);
-    uint64_t block_size = 32; // TODO: Is it always 32 across different chips?
-    uint64_t ub_size_aligned = ub_size / block_size * block_size;
-    uint64_t ub_block_num = ub_size_aligned / block_size;
-    uint64_t num_elements_per_block = block_size / size_of_dtype;
-    /*
-        End preparing information for tiling
-    */
-
-    uint64_t num_elements_total = context->GetInputTensor(0)->GetShapeSize();
-    tiling.set_num_elements_total(num_elements_total);
-    uint64_t align_ = num_elements_per_block * num_cores * BUFFER_NUM;
-    uint64_t num_elements_total_aligned = ((num_elements_total + align_ - 1) / align_) * align_;
-
-    uint64_t num_elements_per_core = num_elements_total_aligned / num_cores; // Evenly distributed thanks to align_
-    tiling.set_num_elements_per_core(num_elements_per_core);
-
-    // All tiles are properly aligned thanks to align_
-    uint64_t num_tiles = (num_elements_per_core + ub_size_aligned - 1) / ub_size_aligned;
-    // Evenly distribute elements across tiles at the granularity of block_size * BUFFER_NUM
-    uint64_t temp = num_elements_per_core / block_size / BUFFER_NUM; // Divisible thanks to align_
-    temp = (temp + num_tiles - 1) / num_tiles * num_tiles;
-    uint64_t num_elements_per_tile = temp * block_size * BUFFER_NUM;
-    uint64_t num_elements_per_buffer = temp * block_size;
-    tiling.set_num_tiles(num_tiles);
+    uint32_t ub_block_num = ub_size / BLOCK_SIZE; 
+    uint32_t num_elements_per_tile = ub_block_num / BUFFER_NUM / VECTOR_NUM;
     tiling.set_num_elements_per_tile(num_elements_per_tile);
-    tiling.set_num_elements_per_tile(num_elements_per_buffer);
 
+    uint32_t num_elements_total = context->GetInputTensor(0)->GetShapeSize();
+    tiling.set_num_elements_total(num_elements_total);
+    uint32_t num_elements_per_core = (num_elements_total + num_cores - 1) / num_cores; // We might calc extra elements
+    tiling.set_num_elements_per_core(num_elements_per_core);
+    uint32_t num_tiles = (num_elements_per_core + num_elements_per_tile - 1) / num_elements_per_tile;
+    tiling.set_num_tiles(num_tiles);
 
     tiling.SaveToBuffer(context->GetRawTilingData()->GetData(),
                         context->GetRawTilingData()->GetCapacity());
