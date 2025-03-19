@@ -93,7 +93,6 @@ private:
 extern "C" __global__ __aicore__ void heaviside(GM_ADDR x, GM_ADDR y, GM_ADDR z, GM_ADDR workspace, GM_ADDR tiling) {
     Heaviside op;
     op.Init(x, y, z, tiling);
-    if (op.num_real_elements_per_core > 0)
-        op.Process();
+    op.Process();
 }
 
