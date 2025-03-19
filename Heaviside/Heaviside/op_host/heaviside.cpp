@@ -86,7 +86,7 @@ public:
 
         this->AICore()
             .SetTiling(optiling::TilingFunc);
-        this->AICore().AddConfig("ascend910");
+        this->AICore().AddConfig("ascend910b");
 
     }
 };
