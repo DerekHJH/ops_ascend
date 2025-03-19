@@ -12,6 +12,12 @@ public:
         this->num_elements_per_tile = tiling_data.num_elements_per_tile;
         uint32_t start_idx = this->num_elements_per_core * AscendC::GetBlockIdx();
         this->num_real_elements_per_core = this->num_elements_total - start_idx;
+        AscendC::printf("num_elements_total: %u\n", this->num_elements_total);
+        AscendC::printf("num_elements_per_core: %u\n", this->num_elements_per_core);
+        AscendC::printf("num_tiles: %u\n", this->num_tiles);
+        AscendC::printf("num_elements_per_tile: %u\n", this->num_elements_per_tile);
+        AscendC::printf("start_idx: %u\n", start_idx);
+        AscendC::printf("num_real_elements_per_core: %u\n", this->num_real_elements_per_core);
         if (this->num_real_elements_per_core > this->num_elements_per_core)
             this->num_real_elements_per_core = this->num_elements_per_core;
         if (this->num_real_elements_per_core <= 0)
