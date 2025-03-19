@@ -31,7 +31,8 @@ public:
         for (int32_t i = 0; i < this->num_tiles; i++) {
             start_idx = i * this->num_elements_per_tile;
             num_real_elements = min(this->num_elements_per_tile, this->num_elements_total - start_idx);
-            AscendC::printf("start_idx: %u, num_real_elements: %u\n", start_idx, num_real_elements);
+            if (AsendC::GetCoreIdx() == 0)
+                AscendC::printf("start_idx: %u, num_real_elements: %u\n", start_idx, num_real_elements);
             CopyIn(i, start_idx, num_real_elements);
             Compute(i, start_idx, num_real_elements);
             CopyOut(i, start_idx, num_real_elements);
@@ -64,6 +65,11 @@ private:
             } else {
                 zLocal[i] = static_cast<DTYPE_Z>(yLocal[i]);  // x == 0 → output y
             }
+        }
+
+        if (AscendC::GetCoreIdx() == 0) {
+            AscendC::printf("progress: %d, start_idx: %u, num_real_elements: %u\n", progress, start_idx, num_real_elements);
+            AscendC::DumpTensor(zLocal, 72, num_real_elements);
         }
 
         outQueueZ.EnQue<DTYPE_Z>(zLocal);

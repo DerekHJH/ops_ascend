@@ -8,12 +8,12 @@ import sys
 import threading
 from typing import Optional, Tuple
 test_data = {
-    'case1': {
+    'case2': {
         'input_shape': [32],
         'data_type': np.float32,
         'values_shape': [32]
     },
-    'case2': {
+    'case1': {
         'input_shape': [65536, 32],
         'data_type': np.float32,
         'values_shape': [65536, 32]
@@ -59,8 +59,8 @@ def verify_result(real_result, golden):
 class TestCustomOP(TestCase):
     def test_custom_op_case(self,num):
         test_name="case" + num
-        tensor_input = np.random.uniform(1, 100,test_data[test_name]['input_shape']).astype(test_data[test_name]['data_type'])
-        tensor_values = np.random.uniform(1, 100,test_data[test_name]['values_shape']).astype(test_data[test_name]['data_type'])
+        tensor_input = np.zeros(1, 100,test_data[test_name]['input_shape']).astype(test_data[test_name]['data_type'])
+        tensor_values = np.ones(1, 100,test_data[test_name]['values_shape']).astype(test_data[test_name]['data_type']) * 114.514
 
         golden = torch.heaviside(torch.from_numpy(tensor_input), torch.from_numpy(tensor_values)).numpy()
         
