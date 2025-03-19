@@ -17,9 +17,9 @@ public:
         AscendC::printf("num_tiles: %u\n", this->num_tiles);
         AscendC::printf("num_elements_per_tile: %u\n", this->num_elements_per_tile);
         AscendC::printf("start_idx: %u\n", start_idx);
-        AscendC::printf("num_real_elements_per_core: %u\n", this->num_real_elements_per_core);
         if (this->num_real_elements_per_core > this->num_elements_per_core)
             this->num_real_elements_per_core = this->num_elements_per_core;
+        AscendC::printf("num_real_elements_per_core: %u\n", this->num_real_elements_per_core);
         if (this->num_real_elements_per_core <= 0)
             return;
         xGm.SetGlobalBuffer((__gm__ DTYPE_X *)x + start_idx, this->num_real_elements_per_core);
@@ -37,10 +37,10 @@ public:
         for (int32_t i = 0; i < this->num_tiles; i++) {
             start_idx = i * this->num_elements_per_tile;
             num_real_elements_per_tile = this->num_real_elements_per_core - start_idx;
-            AscendC::printf("start_idx: %u, num_real_elements_per_tile: %u\n", start_idx, num_real_elements_per_tile);
             if(num_real_elements_per_tile > this->num_elements_per_tile) {
                 num_real_elements_per_tile = this->num_elements_per_tile;
             }
+            AscendC::printf("start_idx: %u, num_real_elements_per_tile: %u\n", start_idx, num_real_elements_per_tile);
             if(num_real_elements_per_tile <= 0) {
                 break; // All that is left are extra elements.
             }
