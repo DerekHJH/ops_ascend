@@ -31,13 +31,13 @@ public:
         for (int32_t i = 0; i < this->num_tiles; i++) {
             start_idx = i * this->num_elements_per_tile;
             num_real_elements_per_tile = this->num_real_elements_per_core - start_idx;
+            AscendC::printf("start_idx: %u, num_real_elements_per_tile: %u\n", start_idx, num_real_elements_per_tile);
             if(num_real_elements_per_tile > this->num_elements_per_tile) {
                 num_real_elements_per_tile = this->num_elements_per_tile;
             }
             if(num_real_elements_per_tile <= 0) {
                 break; // All that is left are extra elements.
             }
-            AscendC::printf("start_idx: %u, num_real_elements_per_tile: %u\n", start_idx, num_real_elements_per_tile);
             CopyIn(i, start_idx, num_real_elements_per_tile);
             Compute(i, start_idx, num_real_elements_per_tile);
             CopyOut(i, start_idx, num_real_elements_per_tile);
