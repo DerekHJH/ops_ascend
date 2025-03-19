@@ -10,7 +10,7 @@ public:
         this->num_elements_per_core = tiling_data.num_elements_per_core;
         this->num_tiles = tiling_data.num_tiles;
         this->num_elements_per_tile = tiling_data.num_elements_per_tile;
-        uint32_t start_idx = this->num_elements_per_core * AscendC::GetBlockIdx();
+        int32_t start_idx = this->num_elements_per_core * AscendC::GetBlockIdx();
         this->num_real_elements_per_core = this->num_elements_total - start_idx;
         AscendC::printf("num_elements_total: %u\n", this->num_elements_total);
         AscendC::printf("num_elements_per_core: %u\n", this->num_elements_per_core);
@@ -32,8 +32,8 @@ public:
     }
     __aicore__ inline void Process()
     {
-        uint32_t start_idx;
-        uint32_t num_real_elements_per_tile;
+        int32_t start_idx;
+        int32_t num_real_elements_per_tile;
         for (int32_t i = 0; i < this->num_tiles; i++) {
             start_idx = i * this->num_elements_per_tile;
             num_real_elements_per_tile = this->num_real_elements_per_core - start_idx;
@@ -89,11 +89,11 @@ private:
     AscendC::GlobalTensor<DTYPE_X> xGm;
     AscendC::GlobalTensor<DTYPE_Y> yGm;
     AscendC::GlobalTensor<DTYPE_Z> zGm;
-    uint32_t num_elements_total;
-    uint32_t num_elements_per_core;
-    uint32_t num_tiles;
-    uint32_t num_elements_per_tile;
-    uint32_t num_real_elements_per_core;
+    int32_t num_elements_total;
+    int32_t num_elements_per_core;
+    int32_t num_tiles;
+    int32_t num_elements_per_tile;
+    int32_t num_real_elements_per_core;
 };
 
 extern "C" __global__ __aicore__ void heaviside(GM_ADDR x, GM_ADDR y, GM_ADDR z, GM_ADDR workspace, GM_ADDR tiling) {
