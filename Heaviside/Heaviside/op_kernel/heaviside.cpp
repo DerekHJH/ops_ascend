@@ -57,15 +57,7 @@ private:
         AscendC::LocalTensor<DTYPE_X> bufLocal = buf.Get<DTYPE_X>();
 
 
-        for (uint32_t i = 0; i < num_real_elements; i++) {
-            if (xLocal[i] < 0) {
-                zLocal[i] = static_cast<DTYPE_Z>(0);  // x < 0 → output 0
-            } else if (xLocal[i] > 0) {
-                zLocal[i] = static_cast<DTYPE_Z>(1);  // x > 0 → output 1
-            } else {
-                zLocal[i] = static_cast<DTYPE_Z>(yLocal[i]);  // x == 0 → output y
-            }
-        }
+        AscendC::Add(zlocal, xLocal, yLocal, num_real_elements);
 
         if (AscendC::GetBlockIdx() == 0) {
             AscendC::printf("progress: %d, start_idx: %u, num_real_elements: %u\n", progress, start_idx, num_real_elements);
