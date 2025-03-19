@@ -10,6 +10,10 @@ public:
         this->num_elements_per_core = tiling_data.num_elements_per_core;
         this->num_tiles = tiling_data.num_tiles;
         this->num_elements_per_tile = tiling_data.num_elements_per_tile;
+        AscendC::printf("num_elements_total: %u\n", this->num_elements_total);
+        AscendC::printf("num_elements_per_core: %u\n", this->num_elements_per_core);
+        AscendC::printf("num_tiles: %u\n", this->num_tiles);
+        AscendC::printf("num_elements_per_tile: %u\n", this->num_elements_per_tile);
         uint32_t start_idx = this->num_elements_per_core * AscendC::GetBlockIdx();
         uint32_t num_real_elements = min(this->num_elements_per_core, this->num_elements_total - start_idx);
         xGm.SetGlobalBuffer((__gm__ DTYPE_X *)x + start_idx, num_real_elements);
@@ -27,6 +31,7 @@ public:
         for (int32_t i = 0; i < this->num_tiles; i++) {
             start_idx = i * this->num_elements_per_tile;
             num_real_elements = min(this->num_elements_per_tile, this->num_elements_total - start_idx);
+            AscendC::printf("start_idx: %u, num_real_elements: %u\n", start_idx, num_real_elements);
             CopyIn(i, start_idx, num_real_elements);
             Compute(i, start_idx, num_real_elements);
             CopyOut(i, start_idx, num_real_elements);
