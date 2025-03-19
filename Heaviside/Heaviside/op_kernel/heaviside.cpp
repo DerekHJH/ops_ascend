@@ -37,8 +37,7 @@ public:
             if(num_real_elements_per_tile <= 0) {
                 break; // All that is left are extra elements.
             }
-            if (AscendC::GetBlockIdx() == 0)
-                AscendC::printf("start_idx: %u, num_real_elements_per_tile: %u\n", start_idx, num_real_elements_per_tile);
+            AscendC::printf("start_idx: %u, num_real_elements_per_tile: %u\n", start_idx, num_real_elements_per_tile);
             CopyIn(i, start_idx, num_real_elements_per_tile);
             Compute(i, start_idx, num_real_elements_per_tile);
             CopyOut(i, start_idx, num_real_elements_per_tile);
@@ -65,9 +64,7 @@ private:
 
         AscendC::Add(zLocal, xLocal, yLocal, num_real_elements_per_tile);
 
-        if (AscendC::GetBlockIdx() == 0) {
-            AscendC::DumpTensor(zLocal, 72, num_real_elements_per_tile);
-        }
+        AscendC::DumpTensor(zLocal, 72, num_real_elements_per_tile);
 
         outQueueZ.EnQue<DTYPE_Z>(zLocal);
         inQueueX.FreeTensor(xLocal);
