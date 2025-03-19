@@ -1,5 +1,4 @@
 #include "kernel_operator.h"
-#include <algorithm>
 constexpr int32_t BUFFER_NUM = 2;
 class Heaviside {
 public:
