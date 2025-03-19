@@ -78,3 +78,7 @@ fi
 # make
 # cpack
 # verbose append -v
+
+# install
+cd build_out
+./custome_opp_hce_aarch64.run
