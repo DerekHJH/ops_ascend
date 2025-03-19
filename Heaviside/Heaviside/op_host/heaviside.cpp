@@ -2,7 +2,7 @@
 #include "heaviside_tiling.h"
 #include "register/op_def_registry.h"
 #include "tiling/platform/platform_ascendc.h"
-#include <numeric>
+#include "graph/utils/type_utils.h"
 
 namespace optiling {
 constexpr uint64_t BUFFER_NUM = 2;
