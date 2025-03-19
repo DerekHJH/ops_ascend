@@ -16,7 +16,7 @@ test_data = {
     'case2': {
         'input_shape': [65536, 32],
         'data_type': np.float32,
-        'values_shape': [65532, 32]
+        'values_shape': [65536, 32]
     }
 }
 def run_with_timeout(func, args=(), kwargs={}, timeout=30):
