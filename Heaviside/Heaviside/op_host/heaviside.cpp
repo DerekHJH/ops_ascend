@@ -14,7 +14,7 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
 
     auto ascendcPlatform = platform_ascendc::PlatformAscendC(context->GetPlatformInfo());
     uint64_t size_of_dtype;
-    ge:TypeUtils::GetDataTypeLength(context->GetInputDesc(0)->GetDataType(), size_of_dtype);
+    ge::TypeUtils::GetDataTypeLength(context->GetInputDesc(0)->GetDataType(), size_of_dtype);
     auto num_cores = ascendcPlatform.GetCoreNumAiv();
     context->SetBlockDim(num_cores);
     uint64_t ub_size;
