@@ -62,9 +62,16 @@ private:
         AscendC::LocalTensor<DTYPE_X> bufLocal = buf.Get<DTYPE_X>();
 
 
-        AscendC::Add(zLocal, xLocal, yLocal, num_real_elements_per_tile);
-
-        AscendC::DumpTensor(zLocal, 72, num_real_elements_per_tile);
+        // AscendC::Add(zLocal, xLocal, yLocal, num_real_elements_per_tile);
+        for (uint32_t i = 0; i < num_real_elements_per_tile; i++) {
+            if (xLocal.GetValue(i) < 0) {
+                zLocal.SetValue(i, 0.0);
+            } else if (xLocal.GetValue(i) > 0) {
+                zLocal.SetValue(i, 1.0);  // x > 0 → output 1
+            } else {
+                zLocal.SetValue(i, yLocal[i]);  // x == 0 → output y
+            }
+        }
 
         outQueueZ.EnQue<DTYPE_Z>(zLocal);
         inQueueX.FreeTensor(xLocal);
