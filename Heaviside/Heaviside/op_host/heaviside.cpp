@@ -7,9 +7,9 @@
 namespace optiling {
 constexpr uint64_t BUFFER_NUM = 2;
 constexpr uint64_t BLOCK_SIZE = 32;
-constexpr INPUT_NUM = 2;
-constexpr OUTPUT_NUM = 1;
-constexpr TEMP_NUM = 1;
+constexpr uint64_t INPUT_NUM = 2;
+constexpr uint64_t OUTPUT_NUM = 1;
+constexpr uint64_t TEMP_NUM = 1;
 constexpr uint64_t VECTOR_NUM = (INPUT_NUM + OUTPUT_NUM) * BUFFER_NUM + TEMP_NUM;
 static ge::graphStatus TilingFunc(gert::TilingContext* context)
 {
