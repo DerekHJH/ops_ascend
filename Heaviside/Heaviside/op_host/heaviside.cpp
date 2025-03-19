@@ -3,6 +3,7 @@
 #include "register/op_def_registry.h"
 #include "tiling/platform/platform_ascendc.h"
 #include "graph/utils/type_utils.h"
+#include "kernel_operator.h" // For AscendC::printf()
 
 namespace optiling {
 constexpr uint64_t BUFFER_NUM = 2;
@@ -18,30 +19,30 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     auto ascendcPlatform = platform_ascendc::PlatformAscendC(context->GetPlatformInfo());
     uint32_t size_of_dtype;
     ge::TypeUtils::GetDataTypeLength(context->GetInputDesc(0)->GetDataType(), size_of_dtype);
-    printf("size_of_dtype: %u\n", size_of_dtype);
+    AscendC::printf("size_of_dtype: %u\n", size_of_dtype);
     auto num_cores = ascendcPlatform.GetCoreNumAiv();
-    printf("num_cores: %llu\n", num_cores);
+    AscendC::printf("num_cores: %llu\n", num_cores);
     context->SetBlockDim(num_cores);
     uint64_t ub_size;
     ascendcPlatform.GetCoreMemSize(platform_ascendc::CoreMemType::UB, ub_size);
-    printf("ub_size: %llu\n", ub_size);
+    AscendC::printf("ub_size: %llu\n", ub_size);
     uint64_t ub_num_blocks = ub_size / BLOCK_SIZE; 
-    printf("ub_num_blocks: %llu\n", ub_num_blocks);
+    AscendC::printf("ub_num_blocks: %llu\n", ub_num_blocks);
     uint64_t num_blocks_per_tile = ub_num_blocks / VECTOR_NUM;
-    printf("num_blocks_per_tile: %llu\n", num_blocks_per_tile);
+    AscendC::printf("num_blocks_per_tile: %llu\n", num_blocks_per_tile);
     uint64_t num_elements_per_tile = num_blocks_per_tile * BLOCK_SIZE / size_of_dtype;
     tiling.set_num_elements_per_tile(num_elements_per_tile);
-    printf("num_elements_per_tile: %llu\n", num_elements_per_tile);
+    AscendC::printf("num_elements_per_tile: %llu\n", num_elements_per_tile);
 
     uint64_t num_elements_total = context->GetInputTensor(0)->GetShapeSize();
     tiling.set_num_elements_total(num_elements_total);
-    printf("num_elements_total: %llu\n", num_elements_total);
+    AscendC::printf("num_elements_total: %llu\n", num_elements_total);
     uint64_t num_elements_per_core = (num_elements_total + num_cores - 1) / num_cores; // We might calc extra elements
     tiling.set_num_elements_per_core(num_elements_per_core);
-    printf("num_elements_per_core: %llu\n", num_elements_per_core);
+    AscendC::printf("num_elements_per_core: %llu\n", num_elements_per_core);
     uint64_t num_tiles = (num_elements_per_core + num_elements_per_tile - 1) / num_elements_per_tile;
     tiling.set_num_tiles(num_tiles);
-    printf("num_tiles: %llu\n", num_tiles);
+    AscendC::printf("num_tiles: %llu\n", num_tiles);
 
     tiling.SaveToBuffer(context->GetRawTilingData()->GetData(),
                         context->GetRawTilingData()->GetCapacity());
