@@ -6,7 +6,7 @@
 
 namespace optiling {
 constexpr uint64_t BUFFER_NUM = 2;
-constexpr uint64_t BLOCK_SIZE = 32;
+constexpr uint64_t REPEAT_SIZE = 256;
 constexpr uint64_t INPUT_NUM = 2;
 constexpr uint64_t OUTPUT_NUM = 1;
 constexpr uint64_t TEMP_NUM = 1;
@@ -25,20 +25,20 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     uint64_t ub_size;
     ascendcPlatform.GetCoreMemSize(platform_ascendc::CoreMemType::UB, ub_size);
     printf("ub_size: %llu\n", ub_size);
-    uint64_t ub_num_blocks = ub_size / BLOCK_SIZE; 
-    printf("ub_num_blocks: %llu\n", ub_num_blocks);
-    uint64_t ub_num_elements_per_block = BLOCK_SIZE / size_of_dtype;
-    printf("ub_num_elements_per_block: %llu\n", ub_num_elements_per_block);
-    uint64_t ub_num_blocks_per_tile = ub_num_blocks / VECTOR_NUM;
-    printf("ub_num_blocks_per_tile: %llu\n", ub_num_blocks_per_tile);
-    uint64_t num_elements_per_tile = ub_num_blocks_per_tile * ub_num_elements_per_block;
+    uint64_t ub_num_repeats = ub_size / REPEAT_SIZE; 
+    printf("ub_num_repeats: %llu\n", ub_num_repeats);
+    uint64_t ub_num_elements_per_repeat = REPEAT_SIZE / size_of_dtype;
+    printf("ub_num_elements_per_repeat: %llu\n", ub_num_elements_per_repeat);
+    uint64_t ub_num_repeats_per_tile = ub_num_repeats / VECTOR_NUM;
+    printf("ub_num_repeats_per_tile: %llu\n", ub_num_repeats_per_tile);
+    uint64_t num_elements_per_tile = ub_num_repeats_per_tile * ub_num_elements_per_repeat;
     tiling.set_num_elements_per_tile(num_elements_per_tile);
     printf("num_elements_per_tile: %llu\n", num_elements_per_tile);
 
     uint64_t num_elements_total = context->GetInputTensor(0)->GetShapeSize();
     tiling.set_num_elements_total(num_elements_total);
     printf("num_elements_total: %llu\n", num_elements_total);
-    uint64_t align_ = num_cores * ub_num_elements_per_block;
+    uint64_t align_ = num_cores * ub_num_elements_per_repeat;
     printf("align_: %u\n", align_);
     uint64_t num_elements_per_core = (num_elements_total + align_ - 1) / align_ * align_ / num_cores; // We might calc extra elements
     tiling.set_num_elements_per_core(num_elements_per_core);
