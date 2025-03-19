@@ -25,9 +25,11 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     uint64_t ub_size;
     ascendcPlatform.GetCoreMemSize(platform_ascendc::CoreMemType::UB, ub_size);
     printf("ub_size: %llu\n", ub_size);
-    uint64_t ub_block_num = ub_size / BLOCK_SIZE; 
-    printf("ub_block_num: %llu\n", ub_block_num);
-    uint64_t num_elements_per_tile = ub_block_num / VECTOR_NUM;
+    uint64_t ub_num_blocks = ub_size / BLOCK_SIZE; 
+    printf("ub_num_blocks: %llu\n", ub_num_blocks);
+    uint64_t num_blocks_per_tile = ub_num_blocks / VECTOR_NUM;
+    printf("num_blocks_per_tile: %llu\n", num_blocks_per_tile);
+    uint64_t num_elements_per_tile = num_blocks_per_tile * BLOCK_SIZE / size_of_dtype;
     tiling.set_num_elements_per_tile(num_elements_per_tile);
     printf("num_elements_per_tile: %llu\n", num_elements_per_tile);
 
