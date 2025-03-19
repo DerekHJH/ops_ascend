@@ -19,7 +19,7 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     uint32_t size_of_dtype;
     ge::TypeUtils::GetDataTypeLength(context->GetInputDesc(0)->GetDataType(), size_of_dtype);
     printf("size_of_dtype: %u\n", size_of_dtype);
-    auto num_cores = ascendcPlatform.GetCoreNumAiv();
+    auto num_cores = ascendcPlatform.GetCoreNum();
     printf("num_cores: %llu\n", num_cores);
     context->SetBlockDim(num_cores);
     uint64_t ub_size;
