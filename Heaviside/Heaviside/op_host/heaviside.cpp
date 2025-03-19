@@ -6,8 +6,11 @@
 
 namespace optiling {
 constexpr uint64_t BUFFER_NUM = 2;
-constexpr uint64_t VECTOR_NUM = 4; // x, y, z, buf;
 constexpr uint64_t BLOCK_SIZE = 32;
+constexpr INPUT_NUM = 2;
+constexpr OUTPUT_NUM = 1;
+constexpr TEMP_NUM = 1;
+constexpr uint64_t VECTOR_NUM = (INPUT_NUM + OUTPUT_NUM) * BUFFER_NUM + TEMP_NUM;
 static ge::graphStatus TilingFunc(gert::TilingContext* context)
 {
     HeavisideTilingData tiling;
@@ -20,7 +23,7 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     uint64_t ub_size;
     ascendcPlatform.GetCoreMemSize(platform_ascendc::CoreMemType::UB, ub_size);
     uint64_t ub_block_num = ub_size / BLOCK_SIZE; 
-    uint64_t num_elements_per_tile = ub_block_num / BUFFER_NUM / VECTOR_NUM;
+    uint64_t num_elements_per_tile = ub_block_num / VECTOR_NUM;
     tiling.set_num_elements_per_tile(num_elements_per_tile);
 
     uint64_t num_elements_total = context->GetInputTensor(0)->GetShapeSize();

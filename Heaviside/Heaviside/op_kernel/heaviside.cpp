@@ -18,7 +18,7 @@ public:
         pipe.InitBuffer(inQueueX, BUFFER_NUM, this->num_elements_per_tile * sizeof(DTYPE_X));
         pipe.InitBuffer(inQueueY, BUFFER_NUM, this->num_elements_per_tile * sizeof(DTYPE_Y));
         pipe.InitBuffer(outQueueZ, BUFFER_NUM, this->num_elements_per_tile * sizeof(DTYPE_Z));
-        pipe.InitBuffer(buf, BUFFER_NUM, this->num_elements_per_tile * sizeof(DTYPE_X));
+        pipe.InitBuffer(buf, this->num_elements_per_tile * sizeof(DTYPE_X));
     }
     __aicore__ inline void Process()
     {
