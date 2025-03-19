@@ -39,7 +39,7 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     tiling.set_num_elements_total(num_elements_total);
     printf("num_elements_total: %llu\n", num_elements_total);
     uint64_t align_ = num_cores * num_elements_per_block;
-    AscendC::printf("align_: %u\n", align_);
+    printf("align_: %u\n", align_);
     uint64_t num_elements_per_core = (num_elements_total + align_ - 1) / align_ * align_; // We might calc extra elements
     tiling.set_num_elements_per_core(num_elements_per_core);
     printf("num_elements_per_core: %llu\n", num_elements_per_core);
