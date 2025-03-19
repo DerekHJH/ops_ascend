@@ -15,7 +15,7 @@ public:
         if (this->num_real_elements_per_core > this->num_elements_per_core)
             this->num_real_elements_per_core = this->num_elements_per_core;
         if (this->num_real_elements_per_core <= 0)
-            this->num_real_elements_per_core = 0;
+            return;
         xGm.SetGlobalBuffer((__gm__ DTYPE_X *)x + start_idx, this->num_real_elements_per_core);
         yGm.SetGlobalBuffer((__gm__ DTYPE_Y *)y + start_idx, this->num_real_elements_per_core);
         zGm.SetGlobalBuffer((__gm__ DTYPE_Z *)z + start_idx, this->num_real_elements_per_core);
@@ -93,6 +93,7 @@ private:
 extern "C" __global__ __aicore__ void heaviside(GM_ADDR x, GM_ADDR y, GM_ADDR z, GM_ADDR workspace, GM_ADDR tiling) {
     Heaviside op;
     op.Init(x, y, z, tiling);
-    op.Process();
+    if (op.num_real_elements_per_core > 0)
+        op.Process();
 }
 
