@@ -65,11 +65,11 @@ private:
         // AscendC::Add(zLocal, xLocal, yLocal, num_real_elements_per_tile);
         for (uint32_t i = 0; i < num_real_elements_per_tile; i++) {
             if (xLocal.GetValue(i) < 0) {
-                zLocal.SetValue(i, 0.0);
+                zLocal.SetValue(i, static_cast<DTYPE_Z>(0));
             } else if (xLocal.GetValue(i) > 0) {
-                zLocal.SetValue(i, 1.0);  // x > 0 → output 1
+                zLocal.SetValue(i, static_cast<DTYPE_Z>(1));
             } else {
-                zLocal.SetValue(i, yLocal[i]);  // x == 0 → output y
+                zLocal.SetValue(i, yLocal[i]);
             }
         }
 
