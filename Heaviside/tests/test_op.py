@@ -13,10 +13,15 @@ test_data = {
         'data_type': np.float32,
         'values_shape': [32]
     },
-    'case1': {
+    'case3': {
         'input_shape': [65536, 32],
         'data_type': np.float32,
         'values_shape': [65536, 32]
+    },
+    'case3': {
+        'input_shape': [32, 32],
+        'data_type': np.float32,
+        'values_shape': [32, 32]
     }
 }
 def run_with_timeout(func, args=(), kwargs={}, timeout=30):
