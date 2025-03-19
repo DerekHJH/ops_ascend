@@ -22,32 +22,33 @@ public:
     }
     __aicore__ inline void Process()
     {
+        uint32_t start_idx;
+        uint32_t num_real_elements;
         for (int32_t i = 0; i < this->num_tiles; i++) {
-            CopyIn(i);
-            Compute(i);
-            CopyOut(i);
+            start_idx = i * this->num_elements_per_tile;
+            num_real_elements = min(this->num_elements_per_tile, this->num_elements_total - start_idx);
+            CopyIn(i, start_idx, num_real_elements);
+            Compute(i, start_idx, num_real_elements);
+            CopyOut(i, start_idx, num_real_elements);
         }
     }
 
 private:
-    __aicore__ inline void CopyIn(int32_t progress)
+    __aicore__ inline void CopyIn(int32_t progress, uint32_t start_idx, uint32_t num_real_elements)
     {
         AscendC::LocalTensor<DTYPE_X> xLocal = inQueueX.AllocTensor<DTYPE_X>();
         AscendC::LocalTensor<DTYPE_Y> yLocal = inQueueY.AllocTensor<DTYPE_Y>();
-        uint32_t start_idx = progress * this->num_elements_per_tile;
-        uint32_t num_real_elements = min(this->num_elements_per_tile, this->num_elements_total - start_idx);
-        AscendC::DataCopy(xLocal, xGm[progress * this->num_elements_per_tile], this->num_elements_per_tile);
-        AscendC::DataCopy(yLocal, yGm[progress * this->num_elements_per_tile], this->num_elements_per_tile);
+        AscendC::DataCopy(xLocal, xGm[start_idx], num_real_elements);
+        AscendC::DataCopy(yLocal, yGm[start_idx], num_real_elements);
         inQueueX.EnQue(xLocal);
         inQueueY.EnQue(yLocal);
     }
-    __aicore__ inline void Compute(int32_t progress)
+    __aicore__ inline void Compute(int32_t progress, uint32_t start_idx, uint32_t num_real_elements)
     {
         AscendC::LocalTensor<DTYPE_X> xLocal = inQueueX.DeQue<DTYPE_X>();
         AscendC::LocalTensor<DTYPE_Y> yLocal = inQueueY.DeQue<DTYPE_Y>();
         AscendC::LocalTensor<DTYPE_Z> zLocal = outQueueZ.AllocTensor<DTYPE_Z>();
         AscendC::LocalTensor<DTYPE_X> bufLocal = buf.Get<DTYPE_X>();
-        uint32_t num_real_elements = min(this->num_elements_per_tile, this->num_elements_total - start_idx);
 
 
         // TODO:
@@ -56,12 +57,10 @@ private:
         inQueueX.FreeTensor(xLocal);
         inQueueY.FreeTensor(yLocal);
     }
-    __aicore__ inline void CopyOut(int32_t progress)
+    __aicore__ inline void CopyOut(int32_t progress, uint32_t start_idx, uint32_t num_real_elements)
     {
         AscendC::LocalTensor<DTYPE_Z> zLocal = outQueueZ.DeQue<DTYPE_Z>();
-        uint32_t start_idx = progress * this->num_elements_per_tile;
-        uint32_t num_real_elements = min(this->num_elements_per_tile, this->num_elements_total - start_idx);
-        AscendC::DataCopy(zGm[progress * this->num_elements_per_tile], zLocal, num_real_elements);
+        AscendC::DataCopy(zGm[start_idx], zLocal, num_real_elements);
         outQueueZ.FreeTensor(zLocal);
     }
 
