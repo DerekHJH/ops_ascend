@@ -27,16 +27,19 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     printf("ub_size: %llu\n", ub_size);
     uint64_t ub_num_blocks = ub_size / BLOCK_SIZE; 
     printf("ub_num_blocks: %llu\n", ub_num_blocks);
+    uint64_t num_elements_per_block = BLOCK_SIZE / size_of_dtype;
+    printf("num_elements_per_block: %llu\n", num_elements_per_block);
     uint64_t num_blocks_per_tile = ub_num_blocks / VECTOR_NUM;
     printf("num_blocks_per_tile: %llu\n", num_blocks_per_tile);
-    uint64_t num_elements_per_tile = num_blocks_per_tile * BLOCK_SIZE / size_of_dtype;
+    uint64_t num_elements_per_tile = num_blocks_per_tile * num_elements_per_block;
     tiling.set_num_elements_per_tile(num_elements_per_tile);
     printf("num_elements_per_tile: %llu\n", num_elements_per_tile);
 
     uint64_t num_elements_total = context->GetInputTensor(0)->GetShapeSize();
     tiling.set_num_elements_total(num_elements_total);
     printf("num_elements_total: %llu\n", num_elements_total);
-    uint64_t num_elements_per_core = (num_elements_total + num_cores - 1) / num_cores; // We might calc extra elements
+    uint64_t align_ = num_cores * num_elements_per_block;
+    uint64_t num_elements_per_core = (num_elements_total + align_ - 1) / align_; // We might calc extra elements
     tiling.set_num_elements_per_core(num_elements_per_core);
     printf("num_elements_per_core: %llu\n", num_elements_per_core);
     uint64_t num_tiles = (num_elements_per_core + num_elements_per_tile - 1) / num_elements_per_tile;
