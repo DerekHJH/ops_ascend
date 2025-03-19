@@ -13,7 +13,7 @@ test_data = {
         'data_type': np.float32,
         'values_shape': [32]
     },
-    'case1': {
+    'case2': {
         'input_shape': [65536, 32],
         'data_type': np.float32,
         'values_shape': [65532, 32]
