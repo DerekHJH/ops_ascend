@@ -80,5 +80,4 @@ fi
 # verbose append -v
 
 # install
-cd build_out
-./custome_opp_hce_aarch64.run
+bash $script_path/build_out/custom_opp_hce_aarch64.run
