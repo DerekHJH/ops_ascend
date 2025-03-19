@@ -51,7 +51,7 @@ public:
     }
 
 private:
-    __aicore__ inline void CopyIn(int32_t progress, uint32_t start_idx, uint32_t num_real_elements_per_tile)
+    __aicore__ inline void CopyIn(int32_t progress, int32_t start_idx, int32_t num_real_elements_per_tile)
     {
         AscendC::LocalTensor<DTYPE_X> xLocal = inQueueX.AllocTensor<DTYPE_X>();
         AscendC::LocalTensor<DTYPE_Y> yLocal = inQueueY.AllocTensor<DTYPE_Y>();
@@ -60,7 +60,7 @@ private:
         inQueueX.EnQue(xLocal);
         inQueueY.EnQue(yLocal);
     }
-    __aicore__ inline void Compute(int32_t progress, uint32_t start_idx, uint32_t num_real_elements_per_tile)
+    __aicore__ inline void Compute(int32_t progress, int32_t start_idx, int32_t num_real_elements_per_tile)
     {
         AscendC::LocalTensor<DTYPE_X> xLocal = inQueueX.DeQue<DTYPE_X>();
         AscendC::LocalTensor<DTYPE_Y> yLocal = inQueueY.DeQue<DTYPE_Y>();
@@ -74,7 +74,7 @@ private:
         inQueueX.FreeTensor(xLocal);
         inQueueY.FreeTensor(yLocal);
     }
-    __aicore__ inline void CopyOut(int32_t progress, uint32_t start_idx, uint32_t num_real_elements_per_tile)
+    __aicore__ inline void CopyOut(int32_t progress, int32_t start_idx, int32_t num_real_elements_per_tile)
     {
         AscendC::LocalTensor<DTYPE_Z> zLocal = outQueueZ.DeQue<DTYPE_Z>();
         AscendC::DataCopy(zGm[start_idx], zLocal, num_real_elements_per_tile);
