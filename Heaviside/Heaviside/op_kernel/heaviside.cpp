@@ -69,7 +69,7 @@ private:
             } else if (xLocal.GetValue(i) > 0) {
                 zLocal.SetValue(i, static_cast<DTYPE_Z>(1));
             } else {
-                zLocal.SetValue(i, static_cast<DTYPE_Z>(yLocal[i]));
+                zLocal.SetValue(i, yLocal.GetValue(i));
             }
         }
 
