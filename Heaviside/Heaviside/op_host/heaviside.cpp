@@ -5,29 +5,29 @@
 #include <numeric>
 
 namespace optiling {
-constexpr uint32_t BUFFER_NUM = 2;
-constexpr uint32_t VECTOR_NUM = 4; // x, y, z, buf;
-constexpr uint32_t BLOCK_SIZE = 32;
+constexpr uint64_t BUFFER_NUM = 2;
+constexpr uint64_t VECTOR_NUM = 4; // x, y, z, buf;
+constexpr uint64_t BLOCK_SIZE = 32;
 static ge::graphStatus TilingFunc(gert::TilingContext* context)
 {
     HeavisideTilingData tiling;
 
     auto ascendcPlatform = platform_ascendc::PlatformAscendC(context->GetPlatformInfo());
-    uint32_t size_of_dtype;
+    uint64_t size_of_dtype;
     ge:TypeUtils::GetDataTypeLength(context->GetInputDesc(0)->GetDataType(), size_of_dtype);
     auto num_cores = ascendcPlatform.GetCoreNumAiv();
     context->SetBlockDim(num_cores);
-    uint32_t ub_size;
+    uint64_t ub_size;
     ascendcPlatform.GetCoreMemSize(platform_ascendc::CoreMemType::UB, ub_size);
-    uint32_t ub_block_num = ub_size / BLOCK_SIZE; 
-    uint32_t num_elements_per_tile = ub_block_num / BUFFER_NUM / VECTOR_NUM;
+    uint64_t ub_block_num = ub_size / BLOCK_SIZE; 
+    uint64_t num_elements_per_tile = ub_block_num / BUFFER_NUM / VECTOR_NUM;
     tiling.set_num_elements_per_tile(num_elements_per_tile);
 
-    uint32_t num_elements_total = context->GetInputTensor(0)->GetShapeSize();
+    uint64_t num_elements_total = context->GetInputTensor(0)->GetShapeSize();
     tiling.set_num_elements_total(num_elements_total);
-    uint32_t num_elements_per_core = (num_elements_total + num_cores - 1) / num_cores; // We might calc extra elements
+    uint64_t num_elements_per_core = (num_elements_total + num_cores - 1) / num_cores; // We might calc extra elements
     tiling.set_num_elements_per_core(num_elements_per_core);
-    uint32_t num_tiles = (num_elements_per_core + num_elements_per_tile - 1) / num_elements_per_tile;
+    uint64_t num_tiles = (num_elements_per_core + num_elements_per_tile - 1) / num_elements_per_tile;
     tiling.set_num_tiles(num_tiles);
 
     tiling.SaveToBuffer(context->GetRawTilingData()->GetData(),
