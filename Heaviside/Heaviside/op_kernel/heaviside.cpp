@@ -69,7 +69,7 @@ private:
     AscendC::TPipe pipe;
     AscendC::TQue<AscendC::QuePosition::VECIN, BUFFER_NUM> inQueueX, inQueueY;
     AscendC::TQue<AscendC::QuePosition::VECOUT, BUFFER_NUM> outQueueZ;
-    AscendC::TBuf<QuePosition::VECCALC> buf,
+    AscendC::TBuf<AscendC::QuePosition::VECCALC> buf,
     AscendC::GlobalTensor<DTYPE_X> xGm;
     AscendC::GlobalTensor<DTYPE_Y> yGm;
     AscendC::GlobalTensor<DTYPE_Z> zGm;
