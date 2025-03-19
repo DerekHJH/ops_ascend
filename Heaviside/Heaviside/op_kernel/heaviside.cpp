@@ -12,7 +12,10 @@ public:
         this->num_tiles = tiling_data.num_tiles;
         this->num_elements_per_tile = tiling_data.num_elements_per_tile;
         uint32_t start_idx = this->num_elements_per_core * AscendC::GetBlockIdx();
-        this->num_real_elements_per_core = std::max(0, std::min(this->num_elements_per_core, this->num_elements_total - start_idx));
+        this->num_real_elements_per_core = min(this->num_elements_per_core, this->num_elements_total - start_idx);
+        if (this->num_real_elements_per_core <= 0) {
+            this->num_real_elements_per_core = 0;
+        }
         xGm.SetGlobalBuffer((__gm__ DTYPE_X *)x + start_idx, this->num_real_elements_per_core);
         yGm.SetGlobalBuffer((__gm__ DTYPE_Y *)y + start_idx, this->num_real_elements_per_core);
         zGm.SetGlobalBuffer((__gm__ DTYPE_Z *)z + start_idx, this->num_real_elements_per_core);
@@ -27,7 +30,7 @@ public:
         uint32_t num_real_elements_per_tile;
         for (int32_t i = 0; i < this->num_tiles; i++) {
             start_idx = i * this->num_elements_per_tile;
-            num_real_elements_per_tile = std::min(this->num_elements_per_tile, this->num_real_elements_per_core - start_idx);
+            num_real_elements_per_tile = min(this->num_elements_per_tile, this->num_real_elements_per_core - start_idx);
             if(num_real_elements_per_tile <= 0) {
                 break; // All that is left are extra elements.
             }
