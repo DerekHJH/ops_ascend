@@ -65,7 +65,7 @@ class TestCustomOP(TestCase):
     def test_custom_op_case(self,num):
         test_name="case" + num
         tensor_input = np.zeros(test_data[test_name]['input_shape']).astype(test_data[test_name]['data_type'])
-        tensor_values = np.ones(test_data[test_name]['values_shape']).astype(test_data[test_name]['data_type']) * np.random.rand()
+        tensor_values = np.ones(test_data[test_name]['values_shape']).astype(test_data[test_name]['data_type']) * np.random.randint(1, 1000)
 
         golden = torch.heaviside(torch.from_numpy(tensor_input), torch.from_numpy(tensor_values)).numpy()
         
