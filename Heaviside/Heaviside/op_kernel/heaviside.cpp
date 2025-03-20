@@ -87,7 +87,9 @@ private:
         // Because this->ub_num_elements_per_tile % this->num_elements_per_repeat == 0
         // num_real_elements_per_tile <= this->ub_num_elements_per_tile.
         this->maskLocal = xLocal < (this->buf0Local);
+        AscendC::DumpTensor(this->maskLocal, 1, this->ub_num_elements_per_tile);
         AscendC::Select(zLocal, this->maskLocal, this->buf0Local, zLocal, AscendC::SELMODE::VSEL_TENSOR_TENSOR_MODE, this->ub_num_elements_per_tile);
+        AscendC::DumpTensor(zLocal, 1, this->ub_num_elements_per_tile);
         this->maskLocal = xLocal > (this->buf0Local);
         AscendC::Select(zLocal, this->maskLocal, this->buf1Local, zLocal, AscendC::SELMODE::VSEL_TENSOR_TENSOR_MODE, this->ub_num_elements_per_tile);
         this->maskLocal = xLocal == (this->buf0Local);
