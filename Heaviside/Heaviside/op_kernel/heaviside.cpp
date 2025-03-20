@@ -43,6 +43,8 @@ public:
         pipe.InitBuffer(buf1, this->ub_num_elements_per_tile * sizeof(DTYPE_X));
         this->buf1Local = buf1.Get<DTYPE_X>();
         this->buf1Local = 1;
+        pipe.InitBuffer(mask, this->ub_num_elements_per_tile / sizeof(uint8_t));
+        this->maskLocal = mask.Get<uint8_t>();
     }
     __aicore__ inline void Process()
     {
@@ -81,20 +83,15 @@ private:
         AscendC::LocalTensor<DTYPE_X> xLocal = inQueueX.DeQue<DTYPE_X>();
         AscendC::LocalTensor<DTYPE_Y> yLocal = inQueueY.DeQue<DTYPE_Y>();
         AscendC::LocalTensor<DTYPE_Z> zLocal = outQueueZ.AllocTensor<DTYPE_Z>();
-        AscendC::LocalTensor<uint8_t> mask;
-
-
-        
-
         // We use this->ub_num_elements_per_tile to calculate the number of elements to process.
         // Because this->ub_num_elements_per_tile % this->num_elements_per_repeat == 0
         // num_real_elements_per_tile <= this->ub_num_elements_per_tile.
-        mask = xLocal < (this->buf0Local);
-        AscendC::Select(zLocal, mask, this->buf0Local, this->zLocal, AscendC::SELMODE::VSEL_TENSOR_TENSOR_MODE, this->ub_num_elements_per_tile);
-        mask = xLocal > (this->buf0Local);
-        AscendC::Select(zLocal, mask, this->buf1Local, this->zLocal, AscendC::SELMODE::VSEL_TENSOR_TENSOR_MODE, this->ub_num_elements_per_tile);
-        mask = xLocal == (this->buf0Local);
-        AscendC::Select(zLocal, mask, yLocal, this->zLocal, AscendC::SELMODE::VSEL_TENSOR_TENSOR_MODE, this->ub_num_elements_per_tile);
+        this->maskLocal = xLocal < (this->buf0Local);
+        AscendC::Select(zLocal, this->maskLocal, this->buf0Local, zLocal, AscendC::SELMODE::VSEL_TENSOR_TENSOR_MODE, this->ub_num_elements_per_tile);
+        this->maskLocal = xLocal > (this->buf0Local);
+        AscendC::Select(zLocal, this->maskLocal, this->buf1Local, zLocal, AscendC::SELMODE::VSEL_TENSOR_TENSOR_MODE, this->ub_num_elements_per_tile);
+        this->maskLocal = xLocal == (this->buf0Local);
+        AscendC::Select(zLocal, this->maskLocal, yLocal, zLocal, AscendC::SELMODE::VSEL_TENSOR_TENSOR_MODE, this->ub_num_elements_per_tile);
 
         outQueueZ.EnQue<DTYPE_Z>(zLocal);
         inQueueX.FreeTensor(xLocal);
@@ -112,9 +109,11 @@ private:
     AscendC::TQue<AscendC::QuePosition::VECIN, BUFFER_NUM> inQueueX, inQueueY;
     AscendC::TQue<AscendC::QuePosition::VECOUT, BUFFER_NUM> outQueueZ;
     AscendC::TBuf<AscendC::QuePosition::VECCALC> buf0;
-    scendC::TBuf<AscendC::QuePosition::VECCALC> buf1;
+    AscendC::TBuf<AscendC::QuePosition::VECCALC> buf1;
+    AscendC::TBuf<AscendC::QuePosition::VECCALC> mask;
     AscendC::LocalTensor<DTYPE_X> buf0Local;
     AscendC::LocalTensor<DTYPE_X> buf1Local;
+    AscendC::LocalTensor<DTYPE_X> maskLocal;
     AscendC::GlobalTensor<DTYPE_X> xGm;
     AscendC::GlobalTensor<DTYPE_Y> yGm;
     AscendC::GlobalTensor<DTYPE_Z> zGm;
