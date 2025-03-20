@@ -28,12 +28,14 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     uint64_t ub_num_repeats = ub_size / REPEAT_SIZE; 
     printf("ub_num_repeats: %llu\n", ub_num_repeats);
     uint64_t ub_num_elements_per_repeat = REPEAT_SIZE / size_of_dtype;
+    tiling.set_ub_num_elements_per_repeat(ub_num_elements_per_repeat);
     printf("ub_num_elements_per_repeat: %llu\n", ub_num_elements_per_repeat);
     uint64_t ub_num_repeats_per_tile = ub_num_repeats / VECTOR_NUM;
+    tiling.set_ub_num_repeats_per_tile(ub_num_repeats_per_tile);
     printf("ub_num_repeats_per_tile: %llu\n", ub_num_repeats_per_tile);
-    uint64_t num_elements_per_tile = ub_num_repeats_per_tile * ub_num_elements_per_repeat;
-    tiling.set_num_elements_per_tile(num_elements_per_tile);
-    printf("num_elements_per_tile: %llu\n", num_elements_per_tile);
+    uint64_t ub_num_elements_per_tile = ub_num_repeats_per_tile * ub_num_elements_per_repeat;
+    tiling.set_ub_num_elements_per_tile(ub_num_elements_per_tile);
+    printf("ub_num_elements_per_tile: %llu\n", ub_num_elements_per_tile);
 
     uint64_t num_elements_total = context->GetInputTensor(0)->GetShapeSize();
     tiling.set_num_elements_total(num_elements_total);
@@ -43,7 +45,7 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     uint64_t num_elements_per_core = (num_elements_total + align_ - 1) / align_ * align_ / num_cores; // We might calc extra elements
     tiling.set_num_elements_per_core(num_elements_per_core);
     printf("num_elements_per_core: %llu\n", num_elements_per_core);
-    uint64_t num_tiles = (num_elements_per_core + num_elements_per_tile - 1) / num_elements_per_tile;
+    uint64_t num_tiles = (num_elements_per_core + ub_num_elements_per_tile - 1) / ub_num_elements_per_tile;
     tiling.set_num_tiles(num_tiles);
     printf("num_tiles: %llu\n", num_tiles);
 
