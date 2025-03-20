@@ -39,10 +39,10 @@ public:
 
         pipe.InitBuffer(buf0, this->ub_num_elements_per_tile * sizeof(DTYPE_X));
         this->buf0Local = buf0.Get<DTYPE_X>();
-        AscendC::Duplicate(this->buf0Local, 0.0, this->ub_num_elements_per_tile);
+        AscendC::Duplicate(this->buf0Local, static_cast<DTYPE_X>(0.0), this->ub_num_elements_per_tile);
         pipe.InitBuffer(buf1, this->ub_num_elements_per_tile * sizeof(DTYPE_X));
         this->buf1Local = buf1.Get<DTYPE_X>();
-        AscendC::Duplicate(this->buf1Local, 1.0, this->ub_num_elements_per_tile);
+        AscendC::Duplicate(this->buf1Local, static_cast<DTYPE_X>(1.0), this->ub_num_elements_per_tile);
         pipe.InitBuffer(mask, this->ub_num_elements_per_tile / sizeof(uint8_t));
         this->maskLocal = mask.Get<uint8_t>();
     }
