@@ -113,7 +113,7 @@ private:
     AscendC::TBuf<AscendC::QuePosition::VECCALC> mask;
     AscendC::LocalTensor<DTYPE_X> buf0Local;
     AscendC::LocalTensor<DTYPE_X> buf1Local;
-    AscendC::LocalTensor<DTYPE_X> maskLocal;
+    AscendC::LocalTensor<uint8_t> maskLocal;
     AscendC::GlobalTensor<DTYPE_X> xGm;
     AscendC::GlobalTensor<DTYPE_Y> yGm;
     AscendC::GlobalTensor<DTYPE_Z> zGm;
