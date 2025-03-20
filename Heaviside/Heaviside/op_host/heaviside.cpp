@@ -10,7 +10,7 @@ constexpr uint64_t REPEAT_SIZE = 256;
 constexpr uint64_t INPUT_NUM = 2;
 constexpr uint64_t OUTPUT_NUM = 1;
 constexpr uint64_t TEMP_NUM = 1;
-constexpr uint64_t VECTOR_NUM = (INPUT_NUM + OUTPUT_NUM) * BUFFER_NUM + TEMP_NUM;
+constexpr uint64_t VECTOR_NUM = (INPUT_NUM + OUTPUT_NUM) * BUFFER_NUM + TEMP_NUM * 4;
 static ge::graphStatus TilingFunc(gert::TilingContext* context)
 {
     HeavisideTilingData tiling;
