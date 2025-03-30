@@ -44,7 +44,7 @@
           "name": "include_self",
           "param_type": "optional",
           "type": "bool",
-          "default_value": "FALSE"
+          "default_value": false
         }
     ]
     }

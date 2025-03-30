@@ -59,7 +59,7 @@ public:
             .Format({ge::FORMAT_ND, ge::FORMAT_ND})
             .UnknownShapeFormat({ge::FORMAT_ND, ge::FORMAT_ND});
         this->Attr("dim").Int();
-        this->Attr("include_self").AttrType(OPTIONAL).Bool(FALSE);
+        this->Attr("include_self").AttrType(OPTIONAL).Bool(false);
 
         this->SetInferShape(ge::InferShape);
 
