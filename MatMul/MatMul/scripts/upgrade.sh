@@ -74,9 +74,25 @@ upgrade()
 
     return 0
 }
-log "[INFO] copy uninstall sh success"
 
-chmod +w ${targetdir}
+upgrade_file()
+{
+    if [ ! -e ${sourcedir}/$vendordir/$1 ]; then
+        log "[INFO] no need to upgrade ops $1 file"
+        return 0
+    fi
+
+    log "copy new $1 files ......"
+    cp -f ${sourcedir}/$vendordir/$1 $targetdir/$vendordir/$1
+    if [ $? -ne 0 ];then
+        log "[ERROR] copy new $1 file failed"
+        return 1
+    fi
+
+    return 0
+}
+
+log "[INFO] copy uninstall sh success"
 
 echo "[ops_custom]upgrade framework"
 upgrade framework
@@ -92,6 +108,18 @@ fi
 
 echo "[ops_custom]upgrade op impl"
 upgrade op_impl
+if [ $? -ne 0 ];then
+    exit 1
+fi
+
+echo "[ops_custom]upgrade op api"
+upgrade op_api
+if [ $? -ne 0 ];then
+    exit 1
+fi
+
+echo "[ops_custom]upgrade version.info"
+upgrade_file version.info
 if [ $? -ne 0 ];then
     exit 1
 fi

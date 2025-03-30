@@ -46,7 +46,9 @@ for file in ${ini_files} ; do
     else
         isHeavy="false"
     fi
-    add_ops ${name} ${isHeavy} ${dest_file}
+    for op in ${name} ; do
+        add_ops ${op} "false" ${dest_file}
+    done
 done
 echo "}" >> ${dest_file}
 file_count=$(cat ${dest_file} | wc -l)
@@ -57,3 +59,4 @@ chmod 640 "${dest_file}"
 echo -e "[INFO] Succed generated ${dest_file}"
 
 exit 0
+

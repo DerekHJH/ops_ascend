@@ -2,15 +2,16 @@ cat << EOF  > "$archname"
 #!/bin/bash
 # This script was generated using Makeself $MS_VERSION
 # The license covering this archive and its contents, if any, is wholly independent of the Makeself license (GPL)
+# 2022.3.19-Modified the MS_Help function and some options
+# Huawei Technologies Co., Ltd. <foss@huawei.com>
 
 ORIG_UMASK=\`umask\`
 
+CRCsum="$CRCsum"
+MD5="$MD5sum"
 SHA="$SHAsum"
 SIGNATURE="$Signature"
-TMPROOT=\${TMPDIR:="/home/tmpdir"}
-if ! test -d "\$TMPROOT"; then
-    TMPROOT="\$HOME"
-fi
+TMPROOT=\${TMPDIR:="\$HOME"}
 if ! test -d "\$TMPROOT"; then
     TMPROOT="\$PWD"
 fi
@@ -24,7 +25,6 @@ ARCHIVE_DIR=\`dirname "\$0"\`
 export ARCHIVE_DIR
 
 name_of_file="\$0 "
-package_name=\`echo \$name_of_file | cut -d "/" -f2 | sed "s/.run//g" \`
 pwd_of_file="\$PWD"
 label="$LABEL"
 script="$SCRIPT"
@@ -43,13 +43,6 @@ nodiskspace="n"
 export_conf="$EXPORT_CONF"
 decrypt_cmd="$DECRYPT_CMD"
 skip="$SKIP"
-PACKAGE_LOG_NAME=makeself
-readonly user_n=\$(whoami)
-info_record_path="\$HOME/log/makeself"
-info_record_file="makeself.log"
-info_record_file_bak="makeself.log.bak"
-log_file=\$info_record_path/\$info_record_file
-LOG_SIZE_THRESHOLD=1024000
 
 print_cmd_arg=""
 if type printf > /dev/null; then
@@ -71,55 +64,6 @@ if test -d /usr/sfw/bin; then
 fi
 
 unset CDPATH
-
-function rotate_log() {
-    check_path "\$log_file"
-    mv -f "\$log_file" "\$info_record_path/\$info_record_file_bak"
-    touch "\$log_file" 2>/dev/null
-    check_path "\$info_record_path/\$info_record_file_bak"
-    chmod 440 "\$info_record_path/\$info_record_file_bak"
-    check_path "\$log_file"
-    chmod 640 "\$log_file"
-}
-function check_path() {
-     if [ "\$1" != \$(realpath "\$1") ]; then
-      echo  >&2
-      echo "Log file is not support symlink, exiting!" >&2
-      exit 1
-     fi
-}
- 
-function log_check() {
-      local log_size
-      log_size=\$(find \$log_file -exec ls -l {} \; | awk '{ print \$5 }')
-      if [[ "\${log_size}" -ge "\${LOG_SIZE_THRESHOLD}" ]];then
-          rotate_log
-      fi
-}
- 
-# usage log "INFO" "this is message"
-function log() {
-    if [ ! -d "\$info_record_path" ];then
-      mkdir -p "\$info_record_path"
-      chmod 750 "\$info_record_path"
-    fi
-    if [[ ! -f "\$log_file" ]];then
-      touch "\$log_file"
-      chmod 640 "\$log_file"
-    fi
-    # print log to log file
-    if [ -f "\$log_file" ]; then
-        log_check "\$log_file"
-        if ! echo -e "[\${PACKAGE_LOG_NAME}] [\${package_name}][\$(date +%Y%m%d-%H:%M:%S)] [\$user_n] [\$1] \$2" >>"\$log_file"
-        then
-          echo "can not write log, exiting!" >&2
-          exit 1
-        fi
-    else
-        echo "log file not exist, exiting!" >&2
-        exit 1
-    fi
-}
 
 MS_Printf()
 {
@@ -228,8 +172,6 @@ Options:
   --list                            Print the list of files in the archive
   --check                           Checks integrity and version dependency of the archive
   --quiet                           Quiet install mode, skip human-computer interactions
-                                    If the package requires an EULA, quiet installations are useful for scripting the installation
-                                    Using this option means accepting the EULA
   --nox11                           Do not spawn an xterm
   --noexec                          Do not run embedded script
   --extract=<path>                  Extract directly to a target directory (absolute or relative)
@@ -266,6 +208,14 @@ MS_Verify_Sig()
 
 MS_Check()
 {
+    OLD_PATH="\$PATH"
+    PATH=\${GUESS_MD5_PATH:-"\$OLD_PATH:/bin:/usr/bin:/sbin:/usr/local/ssl/bin:/usr/local/bin:/opt/openssl/bin"}
+	MD5_ARG=""
+    MD5_PATH=\`exec <&- 2>&-; which md5sum || command -v md5sum || type md5sum\`
+    test -x "\$MD5_PATH" || MD5_PATH=\`exec <&- 2>&-; which md5 || command -v md5 || type md5\`
+    test -x "\$MD5_PATH" || MD5_PATH=\`exec <&- 2>&-; which digest || command -v digest || type digest\`
+    PATH="\$OLD_PATH"
+
     SHA_PATH=\`exec <&- 2>&-; which shasum || command -v shasum || type shasum\`
     test -x "\$SHA_PATH" || SHA_PATH=\`exec <&- 2>&-; which sha256sum || command -v sha256sum || type sha256sum\`
 
@@ -282,6 +232,7 @@ MS_Check()
     i=1
     for s in \$filesizes
     do
+		crc=\`echo \$CRCsum | cut -d" " -f\$i\`
 		if test -x "\$SHA_PATH"; then
 			if test x"\`basename \$SHA_PATH\`" = xshasum; then
 				SHA_ARG="-a 256"
@@ -293,12 +244,40 @@ MS_Check()
 				shasum=\`MS_dd_Progress "\$1" \$offset \$s | eval "\$SHA_PATH \$SHA_ARG" | cut -b-64\`;
 				if test x"\$shasum" != x"\$sha"; then
 					echo "Error in SHA256 checksums: \$shasum is different from \$sha" >&2
-                    log "ERROR" "Error in SHA256 checksums: \$shasum is different from \$sha"
 					exit 2
 				elif test x"\$quiet" = xn; then
 					MS_Printf " SHA256 checksums are OK." >&2
-                    log "INFO" "SHA256 checksums are OK."
 				fi
+				crc="0000000000";
+			fi
+		fi
+		if test -x "\$MD5_PATH"; then
+			if test x"\`basename \$MD5_PATH\`" = xdigest; then
+				MD5_ARG="-a md5"
+			fi
+			md5=\`echo \$MD5 | cut -d" " -f\$i\`
+			if test x"\$md5" = x00000000000000000000000000000000; then
+				test x"\$verb" = xy && echo " \$1 does not contain an embedded MD5 checksum." >&2
+			else
+				md5sum=\`MS_dd_Progress "\$1" \$offset \$s | eval "\$MD5_PATH \$MD5_ARG" | cut -b-32\`;
+				if test x"\$md5sum" != x"\$md5"; then
+					echo "Error in MD5 checksums: \$md5sum is different from \$md5" >&2
+					exit 2
+				elif test x"\$quiet" = xn; then
+					MS_Printf " MD5 checksums are OK." >&2
+				fi
+				crc="0000000000"; verb=n
+			fi
+		fi
+		if test x"\$crc" = x0000000000; then
+			test x"\$verb" = xy && echo " \$1 does not contain a CRC checksum." >&2
+		else
+			sum1=\`MS_dd_Progress "\$1" \$offset \$s | CMD_ENV=xpg4 cksum | awk '{print \$1}'\`
+			if test x"\$sum1" != x"\$crc"; then
+				echo "Error in checksums: \$sum1 is different from \$crc" >&2
+				exit 2
+			elif test x"\$quiet" = xn; then
+				MS_Printf " CRC checksums are OK." >&2
 			fi
 		fi
 		i=\`expr \$i + 1\`
@@ -319,7 +298,6 @@ MS_Decompress()
     
     if test \$? -ne 0; then
         echo " ... Decompression failed." >&2
-        log "ERROR" "Decompression failed."
     fi
 }
 
@@ -432,8 +410,6 @@ do
 	offset=\`head -n "\$skip" "\$0" | wc -c | tr -d " "\`
 	arg1="\$2"
     shift 2 || { MS_Help; exit 1; }
-    log "INFO" "Start --tar process."
-    echo "Makeself logfile: \$log_file"
 	for s in \$filesizes
 	do
 	    MS_dd "\$0" \$offset \$s | MS_Decompress | tar "\$arg1" - "\$@"
@@ -442,7 +418,6 @@ do
 	exit 0
 	;;
     --check)
-    echo "Makeself logfile: \$log_file"
 	MS_Check "\$0" y
 	scriptargs="\$scriptargs \$1"
     shift
@@ -456,9 +431,7 @@ do
 	keep=y
 	targetdir=\`echo \$1 | cut -d"=" -f2 \`
     if ! shift; then MS_Help; exit 1; fi
-	log "INFO" "Extract files to targetdir."
-    echo "Makeself logfile: \$log_file"
-    ;;
+	;;
     --nox11)
 	nox11=y
 	shift
@@ -473,6 +446,15 @@ do
     --phase2)
 	copy=phase2
 	shift
+	;;
+    --repack | --repack-path=*)
+	Script_Args_Check \$1
+	scriptargs="\$scriptargs '\$1'"
+	shift
+	if [[ ! "\$1" =~ ^-.* ]]; then
+		scriptargs="\$scriptargs '\$1'"
+		shift
+	fi
 	;;
     *)
 	Script_Args_Check \$1

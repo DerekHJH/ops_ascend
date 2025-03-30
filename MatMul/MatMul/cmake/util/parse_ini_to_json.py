@@ -28,9 +28,10 @@ ATTR_PARAMTYPE_LIST = ["optional", "required"]
 BOOL_FLAG_KEY = ["dynamicFormat", "dynamicShapeSupport", "dynamicRankSupport", "precision_reduce", "heavyOp",
                  "needCheckSupport", "enableVectorCore"]
 BOOL_LIST = ["true", "false"]
-DTYPE_LIST = ["float16", "bfloat16", "float", "float32", "int8", "int16", "int32", "uint8", "uint16", "uint32", "bool",
+DTYPE_LIST = ["float16", "float", "float32", "int8", "int16", "int32", "uint8", "uint16", "uint32", "bool",
               "int64", "uint64", "qint8", "qint16", "qint32", "quint8", "quint16", "double", "complex64",
-              "complex128", "string", "resource"]
+              "complex128", "string", "resource", "dual", "dual_sub_int8", "dual_sub_uint8", "string_ref",
+              "int4", "bfloat16", "uint1"]
 FORMAT_LIST = ["NCHW", "NHWC", "ND", "NC1HWC0", "FRACTAL_Z", "NC1C0HWPAD", "NHWC1C0", "FSR_NCHW", "FRACTAL_DECONV",
                "C1HWNC0", "FRACTAL_DECONV_TRANSPOSE", "FRACTAL_DECONV_SP_STRIDE_TRANS", "NC1HWC0_C04",
                "FRACTAL_Z_C04", "CHWN", "FRACTAL_DECONV_SP_STRIDE8_TRANS", "HWCN", "NC1KHKWHWC0", "BN_WEIGHT",
@@ -94,7 +95,7 @@ def parse_ini_to_obj(ini_file, tbe_ops_info):
                 key1 = line[:line.index("=")]
                 key2 = line[line.index("=")+1:]
                 key1_0, key1_1 = key1.split(".")
-                if not key1_0 in op_dict:
+                if key1_0 not in op_dict:
                     op_dict[key1_0] = {}
                 if key1_1 in op_dict.get(key1_0):
                     raise RuntimeError("Op:" + op_name + " " + key1_0 + " " +
@@ -237,13 +238,12 @@ def check_op_info(tbe_ops):
     is_valid = True
     for op_key in tbe_ops:
         op_dict = tbe_ops[op_key]
-        is_valid = check_output_exist(op_dict, is_valid)
         for op_info_key in op_dict:
             if op_info_key.startswith("input"):
                 op_input_info = op_dict[op_info_key]
                 missing_keys = []
                 for required_op_input_info_key in required_op_input_info_keys:
-                    if not required_op_input_info_key in op_input_info:
+                    if required_op_input_info_key not in op_input_info:
                         missing_keys.append(required_op_input_info_key)
                 if len(missing_keys) > 0:
                     print("op: " + op_key + " " + op_info_key + " missing: " +
@@ -258,9 +258,9 @@ def check_op_info(tbe_ops):
                 is_valid = check_type_format(op_input_info, is_valid, op_info_key)
             if op_info_key.startswith("output"):
                 op_input_info = op_dict[op_info_key]
-                missing_keys=[]
+                missing_keys = []
                 for required_op_input_info_key in required_op_output_info_keys:
-                    if not required_op_input_info_key in op_input_info:
+                    if required_op_input_info_key not in op_input_info:
                         missing_keys.append(required_op_input_info_key)
                 if len(missing_keys) > 0:
                     print("op: " + op_key + " " + op_info_key + " missing: " +
@@ -289,7 +289,9 @@ def write_json_file(tbe_ops_info, json_file_path):
     ----------------
     """
     json_file_real_path = os.path.realpath(json_file_path)
-    with open(json_file_real_path, "w") as file_path:
+    wr_flag = os.O_WRONLY | os.O_CREAT
+    wr_mode = stat.S_IWUSR | stat.S_IRUSR
+    with os.fdopen(os.open(json_file_real_path, wr_flag, wr_mode), 'w') as file_path:
         # The owner have all rights，group only have read rights
         os.chmod(json_file_real_path, stat.S_IWUSR + stat.S_IRGRP
                  + stat.S_IRUSR)
@@ -318,19 +320,19 @@ def parse_ini_to_json(ini_file_paths, outfile_path):
 if __name__ == '__main__':
     args = sys.argv
 
-    output_file_path = "tbe_ops_info.json"
+    OUTPUT_FILE_PATH = "tbe_ops_info.json"
     ini_file_path_list = []
 
     for arg in args:
         if arg.endswith("ini"):
             ini_file_path_list.append(arg)
-            output_file_path = arg.replace(".ini", ".json")
+            OUTPUT_FILE_PATH = arg.replace(".ini", ".json")
         if arg.endswith("json"):
-            output_file_path = arg
+            OUTPUT_FILE_PATH = arg
 
     if len(ini_file_path_list) == 0:
         ini_file_path_list.append("tbe_ops_info.ini")
 
-    if not parse_ini_to_json(ini_file_path_list, output_file_path):
+    if not parse_ini_to_json(ini_file_path_list, OUTPUT_FILE_PATH):
         sys.exit(1)
     sys.exit(0)

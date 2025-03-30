@@ -1,113 +1,69 @@
-# Copyright (c) Huawei Technologies Co., Ltd. 2020-2021. All rights reserved.
-set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS_RELEASE "-fPIC -O2 -Wall -s")
-set(CMAKE_CXX_FLAGS_DEBUG "-fPIC -O0 -g -Wall")
-set(CAMKE_SKIP_RPATH TRUE)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,relro,-z,now,-z,noexecstack -pie")
-add_compile_options(
-    -fstack-protector-all
-    -D_FORTIFY_SOURCE=2 -O2
-    )
-cmake_minimum_required(VERSION 3.5.1)
-add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
-message(STATUS "CMAKE_CURRENT_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}")
-message(STATUS "CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}")
-
+cmake_minimum_required(VERSION 3.16.0)
 project(opp)
-
-if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/cmake/config.cmake)
-    include(${CMAKE_CURRENT_BINARY_DIR}/cmake/config.cmake)
+if(ENABLE_CROSS_COMPILE)
+    if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL x86_64)
+        set(CROSS_COMPILE_PLATFORM aarch64)
+    else()
+        set(CROSS_COMPILE_PLATFORM x86_64)
+    endif()
+    set(PLATFORM ${CMAKE_SYSTEM_PROCESSOR})
+    set(CMAKE_COMPILE_COMPILER_LIBRARY ${ASCEND_CANN_PACKAGE_PATH}/${PLATFORM}-linux/devlib/linux/${CROSS_COMPILE_PLATFORM}/)
+    set(CMAKE_COMPILE_RUNTIME_LIBRARY ${ASCEND_CANN_PACKAGE_PATH}/${PLATFORM}-linux/devlib/${CROSS_COMPILE_PLATFORM}/)
+    set(CMAKE_SYSTEM_PROCESSOR ${CROSS_COMPILE_PLATFORM})
+    set(CMAKE_COMPILE ${CMAKE_CXX_COMPILER})
+    set(CMAKE_CXX_COMPILER ${CMAKE_CROSS_PLATFORM_COMPILER})
 else()
-    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake)
-        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake)
-    endif()
+    set(CMAKE_COMPILE ${CMAKE_CXX_COMPILER})
 endif()
 
-execute_process(COMMAND rm -rf ./makepkg)
+include(cmake/config.cmake)
+include(cmake/func.cmake)
+include(cmake/intf.cmake)
 
-message(STATUS "OP_COMMON_INC=${OP_COMMON_INC}")
-# add sub compile directory
-if(EXISTS "${CMAKE_SOURCE_DIR}/cpukernel")
-    add_subdirectory(cpukernel)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/framework)
+    add_subdirectory(framework)
 endif()
-if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/framework")
-    if(NOT EXISTS "${CMAKE_SOURCE_DIR}/framework/mindspore")
-        add_subdirectory(framework)
-    endif()
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/op_host)
+    add_subdirectory(op_host)
 endif()
-if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/op_proto")
-    add_subdirectory(op_proto)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/op_kernel)
+    add_subdirectory(op_kernel)
 endif()
-if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/op_tiling")
-    add_subdirectory(op_tiling)
-endif()
-if(EXISTS "${CMAKE_SOURCE_DIR}/tbe")
-    add_subdirectory(tbe)
+if(ENABLE_TEST AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/testcases)
+    add_subdirectory(testcases)
 endif()
 
-if (UNIX)
-    if (NOT "x$ENV{ADD_TESTCASE}" STREQUAL "x")
-      # add testcases subdirectory
-      if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/testcases")
-        add_subdirectory(testcases)
-      endif()
-    endif()
-endif()
+# modify vendor_name in install.sh and upgrade.sh
+add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/scripts/install.sh ${CMAKE_BINARY_DIR}/scripts/upgrade.sh
+    COMMAND mkdir -p ${CMAKE_BINARY_DIR}/scripts
+    COMMAND cp -r ${CMAKE_SOURCE_DIR}/scripts/* ${CMAKE_BINARY_DIR}/scripts/
+    COMMAND sed -i "s/vendor_name=customize/vendor_name=${vendor_name}/g" ${CMAKE_BINARY_DIR}/scripts/*
+)
+add_custom_target(modify_vendor ALL DEPENDS ${CMAKE_BINARY_DIR}/scripts/install.sh ${CMAKE_BINARY_DIR}/scripts/upgrade.sh)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/scripts/ DESTINATION . FILE_PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_READ)
 
-message(STATUS "operation system is ${CMAKE_HOST_SYSTEM_NAME}")
+install(FILES ${CMAKE_SOURCE_DIR}/custom.proto DESTINATION packages OPTIONAL)
 
-if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/op_proto")
-    set(ALL_MODULES ${OP_PROTO_TARGET})
-endif()
-if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/op_tiling")
-    set(ALL_MODULES ${ALL_MODULES} ${OP_TILING_TARGET})
-endif()
-if(EXISTS "${CMAKE_SOURCE_DIR}/cpukernel/CMakeLists.txt")
-    set(ALL_MODULES ${ALL_MODULES} ${AICPU_KERNEL_TARGET})
-    set(ALL_MODULES ${ALL_MODULES} ${AICPU_CONFIG_JSON_TARGET})
-endif()
-message(STATUS "AICPU_CONFIG_INFO_FLAG=${AICPU_CONFIG_INFO_FLAG}")
+get_system_info(SYSTEM_INFO)
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/tbe/CMakeLists.txt")
-    set(ALL_MODULES ${ALL_MODULES} ${OP_IMPL_TARGET})
-endif()
+# gen version.info
+add_custom_target(gen_version_info ALL
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/cmake/util/gen_version_info.sh ${ASCEND_CANN_PACKAGE_PATH} ${CMAKE_CURRENT_BINARY_DIR}
+)
 
-if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/framework/caffe_plugin")
-    set(ALL_MODULES ${ALL_MODULES} ${CAFFE_PLUGIN_TARGET})
-endif()
-if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/framework/tf_plugin")
-    set(ALL_MODULES ${ALL_MODULES} ${TF_PLUGIN_TARGET})
-endif()
-if (IS_DIRECTORY "${CMAKE_SOURCE_DIR}/framework/tf_scope_fusion_pass")
-    set(ALL_MODULES ${ALL_MODULES} ${TF_SCOPE_FUSION_PASS_TARGET})
-endif ()
-if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/framework/onnx_plugin")
-   set(ALL_MODULES ${ALL_MODULES} ${ONNX_PLUGIN_TARGET})
-endif()
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/version.info
+        DESTINATION packages/vendors/${vendor_name}/)
 
-message(STATUS "ALL_MODULES=${ALL_MODULES}")
-add_custom_target(${RUN_TARGET} ALL DEPENDS ${ALL_MODULES})
-
-add_custom_command(TARGET ${RUN_TARGET}
-        PRE_BUILD
-        COMMAND mkdir -p ./makepkg/packages/${PROJECT_DIR}/fusion_rules/
-        COMMAND mkdir -p ./makepkg/packages/${PROJECT_DIR}/op_impl/ai_core/tbe/${OPP_CUSTOM_VENDOR}_impl
-        COMMAND mkdir -p ./makepkg/packages/${PROJECT_DIR}/op_impl/vector_core/tbe/${OPP_CUSTOM_VENDOR}_impl
-        COMMAND mkdir -p ./makepkg/packages/${PROJECT_DIR}/op_impl/cpu/aicpu_kernel/impl
-        COMMAND bash ${CMAKE_SOURCE_DIR}/cmake/util/gen_impl_and_mrege_json.sh ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}
-        COMMAND cp ${CMAKE_SOURCE_DIR}/scripts/* ./makepkg/
-        )
-
-if(EXISTS ${CMAKE_SOURCE_DIR}/custom.proto)
-    add_custom_command(TARGET ${RUN_TARGET}
-        PRE_BUILD
-        COMMAND cp ${CMAKE_SOURCE_DIR}/custom.proto ./makepkg/packages
-        )
-endif()
-
-add_custom_command(TARGET ${RUN_TARGET}
-        PRE_BUILD
-        COMMAND chmod u+x ./makepkg/*.sh
-        COMMAND ${CMAKE_SOURCE_DIR}/cmake/util/makeself/makeself.sh --header ${CMAKE_SOURCE_DIR}/cmake/util/makeself/makeself-header.sh --help-header ${CMAKE_SOURCE_DIR}/scripts/help.info --gzip --complevel 4 --nomd5 --sha256 ./makepkg ${RUN_TARGET} "version:1.0" ./install.sh
-        )
-
+# CPack config
+set(CPACK_PACKAGE_NAME ${CMAKE_PROJECT_NAME})
+set(CPACK_PACKAGE_VERSION ${CMAKE_PROJECT_VERSION})
+set(CPACK_PACKAGE_DESCRIPTION "CPack opp project")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CPack opp project")
+set(CPACK_PACKAGE_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+set(CPACK_PACKAGE_FILE_NAME "custom_opp_${SYSTEM_INFO}.run")
+set(CPACK_GENERATOR External)
+set(CPACK_CMAKE_GENERATOR "Unix Makefiles")
+set(CPACK_EXTERNAL_ENABLE_STAGING TRUE)
+set(CPACK_EXTERNAL_PACKAGE_SCRIPT ${CMAKE_SOURCE_DIR}/cmake/makeself.cmake)
+set(CPACK_EXTERNAL_BUILT_PACKAGES ${CPACK_PACKAGE_DIRECTORY}/_CPack_Packages/Linux/External/${CPACK_PACKAGE_FILE_NAME}/${CPACK_PACKAGE_FILE_NAME})
+include(CPack)
