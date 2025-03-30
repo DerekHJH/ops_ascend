@@ -3,16 +3,16 @@
       "op": "ScatterReduce",
       "input_desc": [
         {
-          "name": "self",
-          "param_type": "required",
-          "format": ["ND", "ND"],
-          "type": ["fp32", "fp16"]
+            "name": "self",
+            "param_type": "required",
+            "format": ["ND", "ND"],
+            "type": ["fp32", "fp16"]
         },
         {
             "name": "index",
             "param_type": "required",
-            "format": ["ND"],
-            "type": ["int32"]
+            "format": ["ND", "ND"],
+            "type": ["int32", "int32"]
         },
         {
             "name": "src",
